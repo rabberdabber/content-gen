@@ -1,10 +1,12 @@
 from collections.abc import Generator
 from typing import Annotated
 
+import httpx
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
+from loguru import logger
 from pydantic import ValidationError
 from sqlmodel import Session
 
@@ -55,3 +57,21 @@ def get_current_active_superuser(current_user: CurrentUser) -> User:
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+async def get_image_metadata(request: Request) -> dict:
+    id = request.query_params.get("id")
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{settings.FLUX_API_BASE_URL}/get_result", params={"id": id}
+        )
+        logger.info(f"response: {response.json()}")
+        metadata = response.json().get("result", {})
+        metadata["url"] = metadata.get("sample", "")
+        metadata["id"] = id
+
+        logger.info(f"metadata: {metadata}")
+        return metadata
+
+
+ImageMetadata = Annotated[dict, Depends(get_image_metadata)]
