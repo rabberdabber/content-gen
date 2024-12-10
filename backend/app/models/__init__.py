@@ -10,8 +10,6 @@ from .image import (
     ImageUploader,
     UploadResult,
 )
-from .item import Item, ItemBase, ItemCreate, ItemPublic, ItemsPublic, ItemUpdate
-from .message import Message
 from .token import NewPassword, Token, TokenPayload
 from .user import (
     UpdatePassword,
@@ -28,7 +26,6 @@ from .user import (
 # These are the models that need to be registered with SQLModel for database tables
 __models__ = [
     Image,
-    Item,
     User,
 ]
 
@@ -42,13 +39,6 @@ __all__ = [
     "ImageResult",
     "ImageUploader",
     "UploadResult",
-    # Item related
-    "Item",
-    "ItemBase",
-    "ItemCreate",
-    "ItemPublic",
-    "ItemsPublic",
-    "ItemUpdate",
     # Token related
     "Token",
     "TokenPayload",
@@ -63,5 +53,4 @@ __all__ = [
     "UserUpdate",
     "UserUpdateMe",
     "UpdatePassword",
-    "Message",
 ]

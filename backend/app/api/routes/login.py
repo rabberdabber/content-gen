@@ -10,7 +10,7 @@ from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.models import Message, NewPassword, Token, UserPublic
+from app.models import NewPassword, Token, UserPublic
 from app.utils import (
     generate_password_reset_token,
     generate_reset_password_email,
@@ -52,7 +52,7 @@ def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
-def recover_password(email: str, session: SessionDep) -> Message:
+def recover_password(email: str, session: SessionDep) -> dict:
     """
     Password Recovery
     """
@@ -72,11 +72,11 @@ def recover_password(email: str, session: SessionDep) -> Message:
         subject=email_data.subject,
         html_content=email_data.html_content,
     )
-    return Message(message="Password recovery email sent")
+    return {"message": "Password recovery email sent"}
 
 
 @router.post("/reset-password/")
-def reset_password(session: SessionDep, body: NewPassword) -> Message:
+def reset_password(session: SessionDep, body: NewPassword) -> dict:
     """
     Reset password
     """
@@ -95,7 +95,7 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     user.hashed_password = hashed_password
     session.add(user)
     session.commit()
-    return Message(message="Password updated successfully")
+    return {"message": "Password updated successfully"}
 
 
 @router.post(
