@@ -14,7 +14,6 @@ dependencies = [
     "jinja2<4.0.0,>=3.1.4",
     "alembic<2.0.0,>=1.12.1",
     "httpx>=0.25.1,<1.0.0",
-    "psycopg[binary]<4.0.0,>=3.1.13",
     "sqlmodel<1.0.0,>=0.0.21",
     # Pin bcrypt until passlib supports the latest
     "bcrypt==4.0.1",
@@ -23,6 +22,7 @@ dependencies = [
     "pyjwt<3.0.0,>=2.8.0",
     "aisuite[all]>=0.1.6",
     "loguru>=0.7.3",
+    "asyncpg>=0.30.0",
 ]
 
 [tool.uv]

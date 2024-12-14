@@ -11,7 +11,7 @@ router = APIRouter(prefix="/images", tags=["images"])
 
 
 @router.post("/upload")
-def upload_image(
+async def upload_image(
     file: UploadFile,
     session: SessionDep,
     uploader: Annotated[LocalImageUploader, Depends()],
@@ -19,4 +19,4 @@ def upload_image(
     meta: dict = Depends(get_image_metadata),
     model: FluxModel = Query(default=FluxModel.FLUX_PRO_1_1.value),
 ):
-    return uploader.upload_image(file, session, meta, model)
+    return await uploader.upload_image(file, session, meta, model)

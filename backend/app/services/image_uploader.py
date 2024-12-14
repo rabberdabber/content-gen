@@ -40,7 +40,7 @@ class LocalImageUploader(ImageUploader):
             while chunk := file.file.read(CHUNK_SIZE):
                 f.write(chunk)
 
-    def upload_image(
+    async def upload_image(
         self, file: UploadFile, session: Session, metadata: dict, model: FluxModel
     ) -> UploadResult:
         file_path = None
@@ -69,8 +69,8 @@ class LocalImageUploader(ImageUploader):
             Image.model_validate(db_image)
 
             session.add(db_image)
-            session.commit()
-            session.refresh(db_image)
+            await session.commit()
+            await session.refresh(db_image)
 
             return UploadResult(
                 url=url,
