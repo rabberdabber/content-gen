@@ -62,17 +62,24 @@ async def get_current_active_superuser(current_user: CurrentUser) -> User:
 
 
 async def get_image_metadata(request: Request) -> dict:
-    id = request.query_params.get("id")
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{settings.FLUX_API_BASE_URL}/get_result", params={"id": id}
-        )
+    metadata = None
+
+    try:
+        id = request.path_params.get("id")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.FLUX_API_BASE_URL}/get_result",
+                params={"id": id},
+            )
         logger.info(f"response: {response.json()}")
         metadata = response.json().get("result", {})
-        metadata["url"] = metadata.get("sample", "")
         metadata["id"] = id
+        metadata["url"] = metadata.get("sample", "")
 
         logger.info(f"metadata: {metadata}")
+        return metadata
+    except Exception as e:
+        logger.error(f"Error getting image metadata: {e}")
         return metadata
 
 

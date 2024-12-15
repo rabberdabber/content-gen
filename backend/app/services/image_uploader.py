@@ -51,7 +51,7 @@ class LocalImageUploader(ImageUploader):
 
             self.ensure_upload_directory()
             unique_filename = self.generate_unique_filename(
-                uuid.UUID(metadata["id"]), file.filename
+                uuid.UUID(metadata.get("id")), file.filename
             )
             file_path = self.get_file_path(unique_filename)
 

@@ -94,8 +94,8 @@ class ImageUploader(ABC):
 class Image(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     filename: str
-    prompt: str
-    model: str = Field(
+    prompt: str | None = None
+    model: str | None = Field(
         default=FluxModel.FLUX_PRO_1_1.value, max_length=20, min_length=1
     )
     url: str
