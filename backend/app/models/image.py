@@ -41,9 +41,6 @@ class ImageCreate(SQLModel):
     height: int = Field(
         default=512, ge=64, le=2048, description="Height of the image in pixels"
     )
-    model: FluxModel = Field(
-        default=FluxModel.FLUX_PRO_1_1, description="Model to use for image generation"
-    )
     prompt_upsampling: bool = Field(
         default=False, description="Whether to use prompt upsampling"
     )
@@ -57,6 +54,101 @@ class ImageCreate(SQLModel):
         default="jpeg",
         regex="^(jpeg|png)$",
         description="Output format of the generated image",
+    )
+
+
+# Pro 1.1 Models
+class FluxProCreate(ImageCreate):
+    model: Literal[FluxModel.FLUX_PRO] = Field(
+        default=FluxModel.FLUX_PRO,
+        description="Flux Pro model"
+    )
+    image_prompt: str | None = Field(
+        default=None,
+        description="Optional base64 encoded image to use with Flux Redux."
+    )
+
+class FluxPro11Create(ImageCreate):
+    model: Literal[FluxModel.FLUX_PRO_1_1] = Field(
+        default=FluxModel.FLUX_PRO_1_1,
+        description="Flux Pro 1.1 model"
+    )
+    image_prompt: str | None = Field(
+        default=None,
+        description="Optional base64 encoded image to use with Flux Redux."
+    )
+
+
+class FluxPro11UltraCreate(ImageCreate):
+    model: Literal[FluxModel.FLUX_PRO_1_1_ULTRA] = Field(
+        default=FluxModel.FLUX_PRO_1_1_ULTRA,
+        description="Flux Pro 1.1 Ultra model"
+    )
+    image_prompt: str | None = None
+    raw: bool = Field(
+        default=False,
+        description="Whether to return the raw image data"
+    )
+    image_prompt_strength: float = Field(
+        default=0.1,
+        ge=0,
+        le=1,
+        description="Strength of the image prompt"
+    )
+    aspect_ratio: Literal["16:9", "9:16", "21:9", "9:21", "3:4", "4:3", "1:1"] = Field(
+        default="16:9",
+        description="Aspect ratio of the generated image"
+    )
+
+
+# Pro 1.0 Models
+class FluxPro10FillCreate(ImageCreate):
+    model: Literal[FluxModel.FLUX_PRO_1_0_FILL] = Field(
+        default=FluxModel.FLUX_PRO_1_0_FILL,
+        description="Flux Pro 1.0 Fill model"
+    )
+    mask: str | None = None
+    steps: int | None = Field(
+        default=None,
+        ge=15,
+        le=100,
+        description="Number of steps to use for the image generation"
+    )
+    image: str = Field(description="Base64 encoded input image")
+
+
+class FluxPro10CannyCreate(ImageCreate):
+    model: Literal[FluxModel.FLUX_PRO_1_0_CANYON] = Field(
+        default=FluxModel.FLUX_PRO_1_0_CANYON,
+        description="Flux Pro 1.0 Canny model"
+    )
+    control_image: str = Field(description="Base64 encoded input image")
+    steps: int | None = Field(
+        default=None,
+        ge=15,
+        le=100,
+        description="Number of steps to use for the image generation"
+    )
+
+
+class FluxPro10DepthCreate(ImageCreate):
+    model: Literal[FluxModel.FLUX_PRO_1_0_DEPTH] = Field(
+        default=FluxModel.FLUX_PRO_1_0_DEPTH,
+        description="Flux Pro 1.0 Depth model"
+    )
+    image: str = Field(description="Base64 encoded input image")
+
+
+
+# Dev Models
+class FluxDevCreate(ImageCreate):
+    model: Literal[FluxModel.FLUX_DEV] = Field(
+        default=FluxModel.FLUX_DEV,
+        description="Flux Dev model"
+    )
+    experimental: bool = Field(
+        default=False,
+        description="Enable experimental features"
     )
 
 

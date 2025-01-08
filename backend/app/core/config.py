@@ -27,7 +27,7 @@ def parse_cors(v: Any) -> list[str] | str:
 class FileStorageSettings(BaseSettings):
     UPLOAD_DIR: str = str(pathlib.Path(__file__).parent.parent / "uploads")
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
-    ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "gif"}
+    ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "gif", "mp4"}
     BASE_URL: str = "http://localhost:8000"
 
 
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     )
     FLUX_API_BASE_URL: str = "https://api.bfl.ml/v1"
     FLUX_API_KEY: str
-    XAI_API_KEY: str
+    OPENAI_API_KEY: str
     IMAGE_GENERATION_POLL_MAX_ATTEMPTS: int = 30
     IMAGE_GENERATION_POLL_WAIT_SECONDS: float = 0.3
 

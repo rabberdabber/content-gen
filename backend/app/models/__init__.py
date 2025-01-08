@@ -3,6 +3,12 @@ from sqlmodel import SQLModel
 # Import all models that need to be registered with SQLModel
 from .image import (
     FluxModel,
+    FluxPro10CannyCreate,
+    FluxPro10DepthCreate,
+    FluxPro10FillCreate,
+    FluxPro11Create,
+    FluxPro11UltraCreate,
+    FluxProCreate,
     Image,
     ImageCreate,
     ImageGenerationResultStatus,
@@ -10,6 +16,7 @@ from .image import (
     ImageUploader,
     UploadResult,
 )
+from .post import Post, PostCreate, PostPublic, PostsPublic, PostUpdate
 from .token import NewPassword, Token, TokenPayload
 from .user import (
     UpdatePassword,
@@ -27,6 +34,7 @@ from .user import (
 __models__ = [
     Image,
     User,
+    Post,
 ]
 
 __all__ = [
@@ -35,6 +43,12 @@ __all__ = [
     "FluxModel",
     "Image",
     "ImageCreate",
+    "FluxProCreate",
+    "FluxPro11Create",
+    "FluxPro11UltraCreate",
+    "FluxPro10FillCreate",
+    "FluxPro10CannyCreate",
+    "FluxPro10DepthCreate",
     "ImageGenerationResultStatus",
     "ImageResult",
     "ImageUploader",
@@ -53,4 +67,10 @@ __all__ = [
     "UserUpdate",
     "UserUpdateMe",
     "UpdatePassword",
+    # Post related
+    "Post",
+    "PostCreate",
+    "PostUpdate",
+    "PostPublic",
+    "PostsPublic",
 ]

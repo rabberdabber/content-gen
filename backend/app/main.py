@@ -4,7 +4,7 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-from app.api.main import api_router
+from app.api import api_router
 from app.core.config import file_storage_settings, settings
 
 
