@@ -20,6 +20,7 @@ class PostCreate(SQLModel):
     tag: str | None = Field(default=None, max_length=50)
     is_published: bool = Field(default=False)
     excerpt: str | None = Field(default=None, max_length=500)
+    feature_image_url: str | None = Field(default=None, max_length=100)
 
 
 class PostUpdate(SQLModel):
@@ -40,6 +41,7 @@ class Post(SQLModel, table=True):
     tag: str | None = Field(default=None, max_length=50)
     is_published: bool = Field(default=False)
     excerpt: str | None = Field(default=None, max_length=500)
+    feature_image_url: str | None = Field(default=None, max_length=100)
     created_at: datetime = Field(
         sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
@@ -61,6 +63,7 @@ class PostPublic(SQLModel):
     created_at: datetime
     updated_at: datetime
     author_id: uuid.UUID
+    feature_image_url: str | None = None
 
 
 class PostsPublic(SQLModel):
