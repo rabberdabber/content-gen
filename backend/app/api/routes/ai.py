@@ -1,22 +1,31 @@
 import asyncio
 import json
+import uuid
 from collections.abc import AsyncGenerator
-from typing import Annotated, Any, Literal, NotRequired, TypedDict
+from io import BytesIO
+from typing import Any, Literal
 
 import httpx
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from loguru import logger
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic_ai import Agent
 
-from app.core.config import settings
+from app.api.deps import SessionDep
+from app.core.config import file_storage_settings, settings
 from app.models import (
     FluxPro11UltraCreate,
     ImageGenerationResultStatus,
 )
-from app.models.image import ImageResult
+from app.models.image import (
+    Image,
+    ImageResult,
+    Uploader,
+)
+from app.services.image_uploader import LocalImageUploader
 
 router = APIRouter(prefix="/ai", tags=["generate images"])
 
@@ -24,7 +33,7 @@ FLUX_API_BASE_URL = "https://api.bfl.ml/v1"
 
 
 @router.post("/generate-image")
-async def generate_image(request: FluxPro11UltraCreate) -> Any:
+async def generate_image(request: FluxPro11UltraCreate, session: SessionDep) -> Any:
     """
     Generate an image using the Flux AI API.
     """
@@ -82,6 +91,41 @@ async def generate_image(request: FluxPro11UltraCreate) -> Any:
                     case ImageGenerationResultStatus.READY:
                         # Get the image data
                         image_url = result_data.get("result").get("sample")
+                        filename = f"{str(task_id)}.{request.output_format}"
+                        file_path = LocalImageUploader.get_file_path(filename)
+
+                        # Download the image from the URL
+                        async with httpx.AsyncClient() as client:
+                            image_response = await client.get(image_url)
+                            if image_response.status_code != 200:
+                                raise HTTPException(
+                                    status_code=500,
+                                    detail=f"Failed to download image from {image_url}"
+                                )
+                            image_data = BytesIO(image_response.content)
+
+                        # Create UploadFile with the downloaded image data
+                        upload_file = UploadFile(
+                            filename=filename,
+                            file=image_data,
+                            headers=image_response.headers
+                        )
+
+                        LocalImageUploader.save_file(file_path, upload_file)
+                        image_url = f"{file_storage_settings.BASE_URL}/uploads/{filename}"
+
+                        db_image = Image(
+                            id=uuid.UUID(task_id),
+                            filename=filename,
+                            prompt=request.prompt,
+                            model=request.model,
+                            url=image_url,
+                            provider=Uploader.LOCAL,
+                        )
+                        Image.model_validate(db_image)
+                        session.add(db_image)
+                        await session.commit()
+                        await session.refresh(db_image)
                         return ImageResult(
                             id=task_id,
                             prompt=request.prompt,
@@ -139,13 +183,23 @@ class CodeBlockNode(BaseModel):
     type: Literal["codeBlock"]
     content: TextNode
 
+class HeadingAttributes(BaseModel):
+    textAlign: Literal["left"]
+    level: Literal[1, 2, 3, 4, 5, 6]
+
+class ParagraphAttributes(BaseModel):
+    textAlign: Literal["left"]
+
 class ParagraphNode(BaseModel):
     type: Literal["paragraph"]
-    content: str
+    attrs: ParagraphAttributes
+    content: list[TextNode]
+
 
 class HeadingNode(BaseModel):
     type: Literal["heading"]
-    content: TextNode
+    attrs: HeadingAttributes
+    content: list[TextNode]
 
 class ListItemNode(BaseModel):
     type: Literal["listItem"]
@@ -156,7 +210,8 @@ class OrderedListNode(BaseModel):
     content: ListItemNode
 
 class BlogContent(BaseModel):
-    content: list[ParagraphNode]
+    type: Literal["doc"]
+    content: list[HeadingNode | ParagraphNode]
 
 class Message(BaseModel):
     role: Literal["system", "user", "assistant"]
@@ -277,78 +332,97 @@ async def generate_content(request: ContentRequest) -> StreamingResponse:
         }
     )
 
+client = OpenAI()
+class EntitiesModel(BaseModel):
+    attributes: list[str]
+    colors: list[str]
+    animals: list[str]
 
-from pydantic_ai import Agent
 
-
-class CareerTodo(TypedDict):
-    id: Annotated[int, Field(description='Unique identifier for the task')]
-    task: str
-    priority: int
-    timeframe: str
-    timeframe: Annotated[
-        str, Field(description='Estimated time to complete: daily, weekly, monthly, quarterly, yearly')
-    ]
-    category: NotRequired[
-        Annotated[
-            str,
-            Field(description='Category of task: technical, soft-skills, networking, education, project'),
-        ]
-    ]
-    expected_impact: NotRequired[
-        Annotated[
-            str,
-            Field(description='Expected impact on career growth')
-        ]
-    ]
-
-class CRUDAPISteps(TypedDict):
-    id: Annotated[int, Field(description='Unique identifier for the step')]
-    step: Annotated[str, Field(description='Step description')]
-    code: Annotated[str, Field(description='Code of the step')]
-
-agent = Agent('openai:gpt-4', result_type=list[CRUDAPISteps])
 @router.post("/generate-content-v2")
-async def generate_content_v2(request: ContentRequest) -> StreamingResponse:
-    """
-    Generate structured blog content using GPT-4 with streaming response.
-    Compatible with Vercel AI SDK, using data stream protocol.
-    """
-    base_system_message = {
-            "role": "system",
-            "content": f"""You are a {request.tone} content creator.
-            Generate content in a {request.format} format using a {request.style} style for the following prompt: {request.prompt}.
+def generate_content_v2(request: ContentRequest) -> StreamingResponse:
+    def stream_content():
+        id = 1
+        with client.beta.chat.completions.stream(
+            model="gpt-4o-2024-08-06",
+            messages=[
+            {"role": "system", "content": f"""You are a {request.tone} content creator.
+            Generate content in a {request.format} format using a {request.style} style.
+            The content should not be longer than 300 words.
+
+            For articles and tutorials, include:
+            - A clear heading
+            - Well-structured paragraphs
+            """},
+            {"role": "user", "content": request.prompt}
+        ],
+            response_format=BlogContent,
+            max_completion_tokens=1000,
+            ) as stream:
+            for event in stream:
+                    if event.type == "content.delta":
+                        if event.parsed is not None:
+                            # Print the parsed data as JSON
+                            yield f"{id}:{json.dumps(event.parsed)}\n"
+                            id += 1
+                    elif event.type == "content.done":
+                        yield f"d:{json.dumps({'finishReason': 'stop'})}\n"
+                    elif event.type == "error":
+                        yield f"3:{json.dumps(str(event.error))}\n"
+
+    # agent = Agent('openai:gpt-4o-2024-08-06', result_type=BlogContent, system_prompt=f"""You are a {request.tone} content creator.
+    #             Generate content in a {request.format} format using a {request.style} style and prompt: {request.prompt}.
+    #             For articles and tutorials, include:
+    #             - A clear heading
+    #             - Well-structured paragraphs
+    #             - Ordered lists where appropriate
+    #             - Code blocks when relevant
+    #             """)
+    #     }
+    # async def generate_content_stream():
+    #     async with agent.run_stream(
+    #         "How to implement a basic CRUD API in Python using FastAPI. Include the id, step, and code for each step.",
+    #     ) as result:
+    #         async for message, last in result.stream_structured(debounce_by=0.1):
+    #             logger.info(f"message: {message}")
+    #             try:
+    #                 content = await result.validate_structured_result(message, allow_partial=not last)
+    #                 for partial_content in content:
+    #                     print(partial_content)
+    #                     yield f"{partial_content}\n"
+    #             except Exception as e:
+    #                 logger.exception(f"Error validating structured result: {e}")
+    #                 yield
+
+    return StreamingResponse(
+        stream_content(),
+        # generate_content_stream(),
+        headers={
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "x-vercel-ai-data-stream": "v1"
+        }
+    )
+
+@router.post("/generate-content-v3")
+def generate_content_v3(request: ContentRequest):
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "system", "content": f"""You are a {request.tone} content creator.
+            Generate content in a {request.format} format using a {request.style} style.
 
             For articles and tutorials, include:
             - A clear heading
             - Well-structured paragraphs
             - Ordered lists where appropriate
             - Code blocks when relevant
-            """
-    }
-    content = []
-    async def generate_content_stream():
-        async with agent.run_stream(
-            "How to implement a basic CRUD API in Python using FastAPI. Include the id, step, and code for each step.",
-        ) as result:
-            async for message, last in result.stream_structured(debounce_by=0.01):
-                try:
-                    logger.info(f"message: {message}")
-                    content = await result.validate_structured_result(message, allow_partial=not last)
-                    for partial_content in content:
-                        yield f"{partial_content}\n"
-                except Exception:
-                    logger.exception("Error validating structured result")
-                    continue
-                    # yield f"3:{str(e)}\n"
-
-
-    return StreamingResponse(
-        generate_content_stream(),
-        media_type="text/plain",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "x-vercel-ai-data-stream": "v1"
-        }
+            """},
+            {"role": "user", "content": request.prompt}
+        ],
+        response_format=BlogContent,
     )
+
+    output = completion.choices[0].message.parsed
+    return output

@@ -27,7 +27,7 @@ def parse_cors(v: Any) -> list[str] | str:
 class FileStorageSettings(BaseSettings):
     UPLOAD_DIR: str = str(pathlib.Path(__file__).parent.parent / "uploads")
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
-    ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "gif", "mp4"}
+    ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "gif", "mp4", "webp"}
     BASE_URL: str = "http://localhost:8000"
 
 
