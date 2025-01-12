@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     IMAGE_GENERATION_POLL_MAX_ATTEMPTS: int = 30
     IMAGE_GENERATION_POLL_WAIT_SECONDS: float = 0.3
+    ROOT_DIR: str = str(pathlib.Path(__file__).parent.parent)
 
     @computed_field  # type: ignore[prop-decorator]
     @property

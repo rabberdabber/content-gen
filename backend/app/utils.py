@@ -121,3 +121,40 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
+
+
+def inject_attributes(node: dict) -> dict:
+    """
+    Inject the appropriate attributes based on node type.
+    """
+    node_type = node["type"]
+
+    if node_type == "heading":
+        node["attrs"] = {"level": 1, "textAlign": "left"}
+
+    elif node_type == "paragraph":
+        node["attrs"] = {"textAlign": "left"}
+
+    elif node_type == "image":
+        node["attrs"] = {
+            "src": node.pop("src"),  # Move src to attrs
+            "alt": node.pop("alt"),  # Move alt to attrs
+            "title": None,
+            "width": 700,
+            "height": 400
+        }
+
+    elif node_type == "codeBlock":
+        node["attrs"] = {"language": "python"}
+
+    elif node_type == "orderedList":
+        node["attrs"] = {"start": 1}
+
+    elif node_type == "listItem":
+        node["attrs"] = {"color": ""}
+
+    # Recursively process content
+    if "content" in node:
+        node["content"] = [inject_attributes(child) for child in node["content"]]
+
+    return node

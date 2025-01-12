@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Literal
 
 import sqlalchemy as sa
+from pydantic import BaseModel
 from sqlmodel import JSON, Column, Field, SQLModel
 
 from app.schemas import TiptapDoc
@@ -34,8 +36,7 @@ class PostUpdate(SQLModel):
 class Post(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     content: dict = Field(  # Store as raw JSON in database
-        sa_type=JSON,
-        description="JSON content of the post in Tiptap format"
+        sa_type=JSON, description="JSON content of the post in Tiptap format"
     )
     title: str = Field(max_length=255, min_length=1)
     tag: str | None = Field(default=None, max_length=50)

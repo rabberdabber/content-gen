@@ -1,7 +1,10 @@
+from contextlib import asynccontextmanager
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
+from openai import OpenAI
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api import api_router
@@ -12,6 +15,15 @@ def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize OpenAI client on startup
+    state = {"openai_client": OpenAI()}
+    yield state
+    # Clean up on shutdown
+    await state["openai_client"].close()
+
+
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
 
@@ -19,6 +31,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
+    lifespan=lifespan,
 )
 
 app.mount(
