@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -84,3 +85,14 @@ async def get_image_metadata(request: Request) -> dict:
 
 
 ImageMetadata = Annotated[dict, Depends(get_image_metadata)]
+
+
+async def get_media_metadata(
+    prompt: str | None = None,
+    id: uuid.UUID | None = None,
+) -> dict:
+    """Get metadata for media upload"""
+    return {
+        "prompt": prompt,
+        "id": str(id) if id else None,
+    }
