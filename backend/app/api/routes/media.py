@@ -14,18 +14,18 @@ router = APIRouter(prefix="/media", tags=["media"])
 @router.post("/upload/{id}")
 async def upload_media(
     file: UploadFile,
-    session: SessionDep,
     uploader: Annotated[S3MediaUploader, Depends()],
     id: uuid.UUID = Path(...),
     meta: dict = Depends(get_media_metadata),
-    model: FluxModel | None = Query(default=None),
+    model: FluxModel = Query(default=FluxModel.FLUX_PRO_1_1),
     media_type: MediaType = Query(default=MediaType.IMAGE),
 ):
     """Upload a media file"""
     if not meta or not meta.get("id"):
         meta = {"id": str(id)}
     meta["media_type"] = media_type.value
-    return await uploader.upload_media(file, session, meta, model)
+    meta["model"] = model.value
+    return await uploader.upload_media(file, meta)
 
 
 @router.get("")

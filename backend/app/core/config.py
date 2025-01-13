@@ -28,10 +28,11 @@ class FileStorageSettings(BaseSettings):
     UPLOAD_DIR: str = str(pathlib.Path(__file__).parent.parent / "uploads")
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "gif", "mp4", "webp"}
-    BASE_URL: str = "http://localhost:8000"
+    BASE_URL: str = "http://localhost:9000"
     MINIO_ROOT_USER: str
     MINIO_ROOT_PASSWORD: str
     MINIO_BUCKET_NAME: str
+    SIGNED_URL_EXPIRATION: int = 3600  # 1 hour in seconds
 
 
 class Settings(BaseSettings):

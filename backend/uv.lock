@@ -230,6 +230,7 @@ dependencies = [
     { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "sqlmodel" },
     { name = "tenacity" },
+    { name = "types-aiobotocore-s3" },
 ]
 
 [package.dev-dependencies]
@@ -264,6 +265,7 @@ requires-dist = [
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=1.40.6,<2.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.21,<1.0.0" },
     { name = "tenacity", specifier = ">=8.2.3,<9.0.0" },
+    { name = "types-aiobotocore-s3", specifier = ">=2.17.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -2078,6 +2080,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cb/ce/dca7b219718afd37a0068f4f2530a727c2b74a8b6e8e0c0080a4c0de4fcd/typer-0.15.1.tar.gz", hash = "sha256:a0588c0a7fa68a1978a069818657778f86abe6ff5ea6abf472f940a08bfe4f0a", size = 99789 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/cc/0a838ba5ca64dc832aa43f727bd586309846b0ffb2ce52422543e6075e8a/typer-0.15.1-py3-none-any.whl", hash = "sha256:7994fb7b8155b64d3402518560648446072864beefd44aa2dc36972a5972e847", size = 44908 },
+]
+
+[[package]]
+name = "types-aiobotocore-s3"
+version = "2.17.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/40/b0/0f8df7c5824387a7bb11cb021b4e8c01b216b986b2a05b141b1b1c81b128/types_aiobotocore_s3-2.17.0.tar.gz", hash = "sha256:f21555cf8d49ad70fd9f2850d462b016bb2581941363d87b191b2ed9be3a7278", size = 73295 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/df/168bca89170c5333598a215f6d19479b99a0acb583da3be6f55961aa957b/types_aiobotocore_s3-2.17.0-py3-none-any.whl", hash = "sha256:46f42913f303f719b4f5ed368484ee905361e0b97295090bfbfc61e70dd0d87d", size = 80666 },
 ]
 
 [[package]]
