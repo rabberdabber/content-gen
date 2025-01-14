@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
@@ -33,6 +34,9 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
+
+# Ensure upload directory exists
+Path(file_storage_settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 
 app.mount(
     "/uploads",
