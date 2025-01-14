@@ -92,7 +92,7 @@ class S3MediaUploader:
                 Bucket=self.bucket_name,
                 Key=unique_filename,
                 Body=content,
-                ContentType=file.content_type,
+                ContentType=file.headers.get("Content-Type") or file.content_type,
                 Metadata=metadata
             )
 
