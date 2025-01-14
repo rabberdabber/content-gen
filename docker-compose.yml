@@ -30,6 +30,7 @@ services:
 
   prestart:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
+    restart: "no"
     build:
       context: ./backend
     networks:
