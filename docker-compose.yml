@@ -18,16 +18,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
 
-  adminer:
-    image: adminer
-    restart: always
-    networks:
-      - default
-    depends_on:
-      - db
-    environment:
-      - ADMINER_DESIGN=pepa-linha-dark
-
   prestart:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}"
     restart: "no"
@@ -107,18 +97,6 @@ services:
 
     build:
       context: ./backend
-
-  frontend:
-    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
-    restart: always
-    networks:
-      - default
-    build:
-      context: ./frontend
-      args:
-        - VITE_API_URL=https://api.${DOMAIN?Variable not set}
-        - NODE_ENV=production
-
   minio:
     image: minio/minio
     ports:
