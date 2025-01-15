@@ -12,7 +12,7 @@ class TextNode(BaseModel):
     text: str
 
 class ImageNode(BaseModel):
-    type: Literal["image"]
+    type: Literal["imageBlock"]
     src: str
     alt: str
 

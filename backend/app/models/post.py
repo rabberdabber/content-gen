@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Literal
 
 import sqlalchemy as sa
-from pydantic import BaseModel
 from sqlmodel import JSON, Column, Field, SQLModel
 
 from app.schemas import TiptapDoc

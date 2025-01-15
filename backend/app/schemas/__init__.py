@@ -20,8 +20,8 @@ class NodeAttrs(SQLModel):
     src: str | None = None
     alt: str | None = None
     title: str | None = None
-    width: int | None = None
-    height: int | None = None
+    width: int | str | None = None
+    height: int | str | None = None
     language: str | None = None
     start: int | None = None
     color: str | None = None

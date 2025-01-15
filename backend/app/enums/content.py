@@ -6,7 +6,7 @@ class NodeTypeEnum(str, Enum):
     paragraph = "paragraph"
     heading = "heading"
     text = "text"
-    image = "image"
+    imageBlock = "imageBlock"
     codeBlock = "codeBlock"
     orderedList = "orderedList"
     listItem = "listItem"
