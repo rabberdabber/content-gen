@@ -3,6 +3,7 @@ from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
@@ -19,11 +20,10 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize OpenAI client on startup
-    state = {"openai_client": OpenAI()}
+    state = {"openai_client": OpenAI(api_key=settings.OPENAI_API_KEY)}
     yield state
     # Clean up on shutdown
     await state["openai_client"].close()
-
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
@@ -53,5 +53,13 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+@app.get("/", tags=["root"])
+async def root():
+    return {"message": "Hello From ContentGen"}
+
+@app.get("/favicon.ico", tags=["favicon"])
+async def favicon():
+    return FileResponse(file_storage_settings.UPLOAD_DIR + "/logo.svg")
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

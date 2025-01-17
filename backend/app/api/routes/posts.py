@@ -3,8 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
-from sqlmodel import select, func
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import func, select
 
 from app.api.deps import SessionDep, get_current_active_superuser
 from app.models import Post, PostCreate, PostPublic, PostsPublic, PostUpdate, User
@@ -49,8 +48,8 @@ async def read_posts(
     query = select(Post)
     if tag:
         query = query.where(Post.tag == tag)
-    
-    
+
+
     count_statement = select(func.count()).select_from(Post)
     count = await session.scalar(count_statement)
 
@@ -89,15 +88,15 @@ async def update_post(
     post = await session.get(Post, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    
+
     if post.author_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+
     # Only update fields that were actually passed
     update_data = post_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(post, field, value)
-    
+
     session.add(post)
     await session.commit()
     await session.refresh(post)
@@ -117,10 +116,10 @@ async def delete_post(
     post = await session.get(Post, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    
+
     if post.author_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+
     await session.delete(post)
     await session.commit()
-    return {"ok": True} 
+    return {"ok": True}

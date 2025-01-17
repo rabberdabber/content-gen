@@ -59,7 +59,7 @@ def generate_test_email(email_to: str) -> EmailData:
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
-        template_name="test_email.html",
+        template_name="login.html",
         context={"project_name": settings.PROJECT_NAME, "email": email_to},
     )
     return EmailData(html_content=html_content, subject=subject)

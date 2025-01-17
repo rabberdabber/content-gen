@@ -1,25 +1,32 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import EmailStr
+from sqlmodel import SQLModel
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
+from app.core.magic_link import create_magic_link, verify_magic_link
 from app.core.security import get_password_hash
 from app.models import NewPassword, Token, UserPublic
+from app.services.email_sender import send_email
 from app.utils import (
     generate_password_reset_token,
     generate_reset_password_email,
-    send_email,
+    render_email_template,
     verify_password_reset_token,
 )
 
 router = APIRouter(tags=["login"])
 
+
+class MagicLinkRequest(SQLModel):
+    email: EmailStr
 
 @router.post("/login/access-token")
 async def login_access_token(
@@ -121,4 +128,56 @@ async def recover_password_html_content(email: str, session: SessionDep) -> Any:
 
     return HTMLResponse(
         content=email_data.html_content, headers={"subject:": email_data.subject}
+    )
+
+
+@router.post("/login/magic-link")
+async def request_magic_link(request: MagicLinkRequest, session: SessionDep, background_tasks: BackgroundTasks) -> dict:
+    """
+    Request a magic link for passwordless authentication
+    """
+    user = await crud.get_user_by_email(session=session, email=request.email)
+    if not user:
+        return {"message": "If your email is registered, you'll receive a magic link"}
+
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    magic_link_token = create_magic_link(request.email)
+    magic_link = f"{settings.FRONTEND_HOST}/auth/verify?token={magic_link_token}"
+
+    html_content = render_email_template(
+        template_name="magic_link.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "magic_link": magic_link,
+        },
+    )
+
+    background_tasks.add_task(send_email, request.email, f"{settings.PROJECT_NAME} - Login Link", html_content)
+
+    return {"message": "If your email is registered, you'll receive a magic link"}
+
+
+@router.post("/login/verify-magic-link")
+async def verify_magic_link_token(token: str, session: SessionDep) -> Token:
+    """
+    Verify magic link token and return access token
+    """
+    try:
+        email = verify_magic_link(token)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    user = await crud.get_user_by_email(session=session, email=email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return Token(
+        access_token=security.create_access_token(
+            user.id, expires_delta=access_token_expires
+        )
     )

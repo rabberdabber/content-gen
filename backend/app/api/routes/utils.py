@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic.networks import EmailStr
 
 from app.api.deps import get_current_active_superuser
-from app.utils import generate_test_email, send_email
+from app.core.config import settings
+from app.services.email_sender import send_email
+from app.utils import render_email_template
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 
@@ -12,17 +14,17 @@ router = APIRouter(prefix="/utils", tags=["utils"])
     dependencies=[Depends(get_current_active_superuser)],
     status_code=201,
 )
-def test_email(email_to: EmailStr) -> dict:
+async def test_email(email_to: EmailStr, background_tasks: BackgroundTasks) -> dict:
     """
     Test emails.
     """
-    email_data = generate_test_email(email_to=email_to)
-    send_email(
-        email_to=email_to,
-        subject=email_data.subject,
-        html_content=email_data.html_content,
+    subject = f"{settings.PROJECT_NAME}"
+    html_content = render_email_template(
+        template_name="login.html",
+        context={"name": "test", "invite_sender_name": "test", "invite_sender_organization_name": "test", "product_name": "test", "support_email": settings.EMAILS_FROM_EMAIL, "action_url": "https://example.com"},
     )
-    return {"message": "Test email sent"}
+    background_tasks.add_task(send_email, email_to, subject, html_content)
+    return {"message": "Test email sent in the background"}
 
 
 @router.get("/health-check/")

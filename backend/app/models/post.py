@@ -54,7 +54,6 @@ class Post(SQLModel, table=True):
 
 class PostPublic(SQLModel):
     id: uuid.UUID
-    content: TiptapDoc
     title: str
     tag: str | None = None
     is_published: bool
@@ -63,6 +62,10 @@ class PostPublic(SQLModel):
     updated_at: datetime
     author_id: uuid.UUID
     feature_image_url: str | None = None
+
+
+class PostPublicWithContent(PostPublic):
+    content: TiptapDoc
 
 
 class PostsPublic(SQLModel):

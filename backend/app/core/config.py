@@ -25,6 +25,11 @@ def parse_cors(v: Any) -> list[str] | str:
 
 
 class FileStorageSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file="../.env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
     UPLOAD_DIR: str = str(pathlib.Path(__file__).parent.parent / "uploads")
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: set[str] = {"png", "jpg", "jpeg", "gif", "mp4", "webp"}
@@ -34,6 +39,21 @@ class FileStorageSettings(BaseSettings):
     MINIO_BUCKET_NAME: str
     SIGNED_URL_EXPIRATION: int = 3600  # 1 hour in seconds
 
+
+class EmailSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file="../.env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+    SMTP_TOKEN: str
+    EMAILS_FROM_EMAIL: str
+    SMTP_STARTTLS: bool
+    SMTP_STARTSSL: bool
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -139,3 +159,4 @@ class Settings(BaseSettings):
 
 settings = Settings()  # type: ignore
 file_storage_settings = FileStorageSettings()  # type: ignore
+email_settings = EmailSettings()  # type: ignore
