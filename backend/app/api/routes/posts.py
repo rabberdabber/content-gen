@@ -71,6 +71,34 @@ async def read_posts(
     return PostsPublic(data=posts, count=count)
 
 
+@router.get("/me", response_model=PostsPublic)
+async def read_published_posts(
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
+    tag: str | None = None,
+    published: bool = True,
+) -> Any:
+    """
+    Retrieve posts.
+    """
+    query = select(Post).where(Post.author_id == current_user.id)
+    if tag:
+        query = query.where(Post.tag == tag)
+    if published:
+        query = query.where(Post.is_published == published)
+    else:
+        query = query.where(Post.is_published == False)  # noqa: E712  draft posts
+
+    count_statement = select(func.count()).select_from(query)
+    count = await session.scalar(count_statement)
+
+    statement = query.offset(skip).limit(limit)
+    posts = await session.scalars(statement)
+    return PostsPublic(data=posts, count=count)
+
+
 @router_drafts.get("/", response_model=PostsPublic)
 async def read_drafts(
     session: SessionDep,

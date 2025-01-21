@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Any
 
 import jwt
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from jwt.exceptions import InvalidTokenError
 from loguru import logger
