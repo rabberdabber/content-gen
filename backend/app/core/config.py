@@ -118,9 +118,7 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def all_allowed_hosts(self) -> list[str]:
-        return [self.ALLOWED_HOSTS] + [
-            self.FRONTEND_HOST
-        ]
+        return self.ALLOWED_HOSTS
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
