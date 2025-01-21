@@ -48,17 +48,17 @@ app = FastAPI(
     redoc_url=None,
 )
 
-if settings.ENVIRONMENT == "local":
-    @app.middleware("http")
-    async def dispatch(request: Request, call_next):
-            # Log the request details
-        logger.info(f"Request: {request.method} {request.url.path}")
-        logger.info(f"Body: {await request.body()}")
-        logger.info(f"Headers: {dict(request.headers)}")
-    
-        # Process the request and get the response
-        response = await call_next(request)
-        return response
+# if settings.ENVIRONMENT == "local":
+@app.middleware("http")
+async def dispatch(request: Request, call_next):
+        # Log the request details
+    logger.info(f"Request: {request.method} {request.url.path}")
+    logger.info(f"Body: {await request.body()}")
+    logger.info(f"Headers: {dict(request.headers)}")
+
+    # Process the request and get the response
+    response = await call_next(request)
+    return response
 
 
 # Ensure upload directory exists
