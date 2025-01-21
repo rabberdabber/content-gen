@@ -23,12 +23,12 @@ class S3MediaUploader:
         self.bucket_name = file_storage_settings.MINIO_BUCKET_NAME
 
     async def _get_client(self) -> S3Client:
-        return await self.session.create_client(
+        return self.session.create_client(
             's3',
             endpoint_url=self.endpoint_url,
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
-        ).__aenter__()
+        )
 
     async def _ensure_bucket_exists(self, client: S3Client) -> None:
         """Ensure the bucket exists, create it if it doesn't"""
@@ -78,38 +78,39 @@ class S3MediaUploader:
 
         try:
             client = await self._get_client()
-            await self._ensure_bucket_exists(client)
+            async with client as s3:  # Use async context manager
+                await self._ensure_bucket_exists(s3)
 
-            # Ensure metadata values are strings and not None
-            metadata = {
-                "media_type": str(meta.get("media_type", MediaType.IMAGE.value)),
-                "prompt": str(meta.get("prompt", "")),
-                "model": str(meta.get("model", FluxModel.FLUX_PRO_1_1.value)),
-            }
+                # Ensure metadata values are strings and not None
+                metadata = {
+                    "media_type": str(meta.get("media_type", MediaType.IMAGE.value)),
+                    "prompt": str(meta.get("prompt", "")),
+                    "model": str(meta.get("model", FluxModel.FLUX_PRO_1_1.value)),
+                }
 
-            # Upload file with metadata
-            await client.put_object(
-                Bucket=self.bucket_name,
-                Key=unique_filename,
-                Body=content,
-                ContentType=file.headers.get("Content-Type") or file.content_type,
-                Metadata=metadata
-            )
+                # Upload file with metadata
+                await s3.put_object(
+                    Bucket=self.bucket_name,
+                    Key=unique_filename,
+                    Body=content,
+                    ContentType=file.headers.get("Content-Type") or file.content_type,
+                    Metadata=metadata
+                )
 
-            # Get object metadata
-            response = await client.head_object(
-                Bucket=self.bucket_name,
-                Key=unique_filename
-            )
+                # Get object metadata
+                response = await s3.head_object(
+                    Bucket=self.bucket_name,
+                    Key=unique_filename
+                )
 
-            return {
-                "key": unique_filename,
-                "url": self.get_object_url(self.endpoint_url, self.bucket_name, unique_filename),
-                "content_type": file.content_type,
-                "size": response["ContentLength"],
-                "metadata": response.get("Metadata", {}),
-                "last_modified": response["LastModified"].isoformat(),
-            }
+                return {
+                    "key": unique_filename,
+                    "url": self.get_object_url(self.endpoint_url, self.bucket_name, unique_filename),
+                    "content_type": file.content_type,
+                    "size": response["ContentLength"],
+                    "metadata": response.get("Metadata", {}),
+                    "last_modified": response["LastModified"].isoformat(),
+                }
 
         except Exception as e:
             logger.error(f"Error uploading file: {str(e)}")
@@ -123,45 +124,46 @@ class S3MediaUploader:
         media_type: MediaType | None = None,
     ) -> dict[str, Any]:
         try:
-            client: S3Client = await self._get_client()
-            await self._ensure_bucket_exists(client)
+            client = await self._get_client()
+            async with client as s3:  # Use async context manager
+                await self._ensure_bucket_exists(s3)
 
-            params: dict[str, Any] = {
-                "Bucket": self.bucket_name,
-                "MaxKeys": max_keys,
-            }
-            if prefix:
-                params["Prefix"] = prefix
-            if continuation_token:
-                params["ContinuationToken"] = continuation_token
+                params: dict[str, Any] = {
+                    "Bucket": self.bucket_name,
+                    "MaxKeys": max_keys,
+                }
+                if prefix:
+                    params["Prefix"] = prefix
+                if continuation_token:
+                    params["ContinuationToken"] = continuation_token
 
-            response: ListObjectsV2OutputTypeDef = await client.list_objects_v2(**params)
+                response: ListObjectsV2OutputTypeDef = await s3.list_objects_v2(**params)
 
-            contents = []
-            for obj in response.get("Contents", []):
-                head: HeadObjectOutputTypeDef = await client.head_object(
-                    Bucket=self.bucket_name,
-                    Key=obj["Key"]
-                )
-                metadata = head.get("Metadata", {})
+                contents = []
+                for obj in response.get("Contents", []):
+                    head: HeadObjectOutputTypeDef = await s3.head_object(
+                        Bucket=self.bucket_name,
+                        Key=obj["Key"]
+                    )
+                    metadata = head.get("Metadata", {})
 
-                if media_type and metadata.get("media_type") != media_type.value:
-                    continue
+                    if media_type and metadata.get("media_type") != media_type.value:
+                        continue
 
-                contents.append({
-                    "key": obj["Key"],
-                    "size": obj["Size"],
-                    "last_modified": obj["LastModified"].isoformat(),
-                    "url": self.get_object_url(self.endpoint_url, self.bucket_name, obj["Key"]),
-                    "metadata": metadata,
-                })
+                    contents.append({
+                        "key": obj["Key"],
+                        "size": obj["Size"],
+                        "last_modified": obj["LastModified"].isoformat(),
+                        "url": self.get_object_url(self.endpoint_url, self.bucket_name, obj["Key"]),
+                        "metadata": metadata,
+                    })
 
-            return {
-                "contents": contents,
-                "key_count": response.get("KeyCount", 0),
-                "is_truncated": response.get("IsTruncated", False),
-                "next_continuation_token": response.get("NextContinuationToken"),
-            }
+                return {
+                    "contents": contents,
+                    "key_count": response.get("KeyCount", 0),
+                    "is_truncated": response.get("IsTruncated", False),
+                    "next_continuation_token": response.get("NextContinuationToken"),
+                }
 
         except Exception as e:
             logger.error(f"Error listing files: {str(e)}")

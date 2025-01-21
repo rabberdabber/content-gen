@@ -5,11 +5,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from sqlmodel import func, select
 
-from app.api.deps import SessionDep, get_current_active_superuser
-from app.models import Post, PostCreate, PostPublic, PostsPublic, PostUpdate, User
+from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
+from app.models import (
+    Post,
+    PostCreate,
+    PostPublic,
+    PostPublicWithContent,
+    PostsPublic,
+    PostUpdate,
+    User,
+)
 from app.schemas import TiptapDoc
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+router_drafts = APIRouter(prefix="/drafts", tags=["drafts"])
 
 
 @router.post("/",) #response_model=PostPublic)
@@ -41,6 +50,7 @@ async def read_posts(
     skip: int = 0,
     limit: int = 100,
     tag: str | None = None,
+    published: bool = True,
 ) -> Any:
     """
     Retrieve posts.
@@ -48,18 +58,62 @@ async def read_posts(
     query = select(Post)
     if tag:
         query = query.where(Post.tag == tag)
+    if published:
+        query = query.where(Post.is_published == published)
+    else:
+        query = query.where(Post.is_published == False)  # noqa: E712  draft posts
 
-
-    count_statement = select(func.count()).select_from(Post)
+    count_statement = select(func.count()).select_from(query)
     count = await session.scalar(count_statement)
 
-    statement = select(Post).offset(skip).limit(limit)
+    statement = query.offset(skip).limit(limit)
     posts = await session.scalars(statement)
-    logger.info(f"Posts: {posts}")
     return PostsPublic(data=posts, count=count)
 
 
-@router.get("/{post_id}", response_model=PostPublic)
+@router_drafts.get("/", response_model=PostsPublic)
+async def read_drafts(
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
+    tag: str | None = None,
+) -> Any:
+    """
+    Retrieve posts.
+    """
+    query = select(Post).where(Post.author_id == current_user.id, Post.is_published == False)  # noqa: E712  draft posts
+    if tag:
+        query = query.where(Post.tag == tag)
+
+
+    count_statement = select(func.count()).select_from(query)
+    count = await session.scalar(count_statement)
+
+    statement = query.offset(skip).limit(limit)
+    posts = await session.scalars(statement)
+    return PostsPublic(data=posts, count=count)
+
+
+@router_drafts.get("/{draft_id}", response_model=PostPublicWithContent)
+async def read_draft(
+    session: SessionDep,
+    current_user: CurrentUser,
+    draft_id: UUID,
+) -> Any:
+    """
+    Retrieve draft.
+    """
+    query = select(Post).where(Post.author_id == current_user.id, Post.is_published == False, Post.id == draft_id)  # noqa: E712  draft posts
+
+
+    draft = await session.scalar(query)
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    return draft
+
+
+@router.get("/{post_id}", response_model=PostPublicWithContent)
 async def read_post(
     *,
     session: SessionDep,
@@ -121,5 +175,22 @@ async def delete_post(
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     await session.delete(post)
+    await session.commit()
+    return {"ok": True}
+
+
+@router.delete("/")
+async def delete_all_posts(
+    *,
+    session: SessionDep,
+    current_user: User = Depends(get_current_active_superuser),
+) -> Any:
+    """
+    Delete all posts.
+    """
+    query = select(Post)
+    posts = await session.exec(query)
+    for post in posts:
+        await session.delete(post)
     await session.commit()
     return {"ok": True}

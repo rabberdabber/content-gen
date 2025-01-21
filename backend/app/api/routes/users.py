@@ -1,7 +1,11 @@
 import uuid
+from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+import jwt
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
+from jwt.exceptions import InvalidTokenError
 from loguru import logger
 from sqlmodel import func, select
 
@@ -12,7 +16,7 @@ from app.api.deps import (
     get_current_active_superuser,
 )
 from app.core.config import settings
-from app.core.security import get_password_hash, verify_password
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models import (
     UpdatePassword,
     User,
@@ -23,7 +27,11 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
-from app.utils import generate_new_account_email, send_email
+from app.utils import (
+    generate_email_verification_email,
+    generate_new_account_email,
+    send_email,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -148,13 +156,43 @@ async def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     user = await crud.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
     user = await crud.create_user(session=session, user_create=user_create)
+    # TODO: send email to verify email
     return user
 
+@router.get("/verify-email")
+async def verify_email_redirect(
+    token: str,
+) -> Any:
+    """
+    Validates the verification token and redirects to frontend for completion.
+    """
+    try:
+        # Validate token without modifying database
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=["HS256"]
+        )
+        # Verify this is an email verification token
+        if payload.get("type") != "email_verification":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+
+        email: str = payload.get("sub")
+        user_id: str = payload.get("user_id")
+        if not email or not user_id:
+            raise HTTPException(status_code=400, detail="Invalid token")
+
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_HOST}/verify-email?token={token}"
+        )
+    except InvalidTokenError as e:
+        logger.error(e)
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_HOST}/verify-email/error"
+        )
 
 @router.get("/{user_id}", response_model=UserPublic)
 async def read_user_by_id(
@@ -173,6 +211,51 @@ async def read_user_by_id(
         )
     return user
 
+
+@router.patch("/verify-email", response_model=UserPublic)
+async def verify_email(
+    token: str,
+    session: SessionDep
+) -> Any:
+    """
+    Complete email verification by updating the database.
+    Called by frontend after redirect.
+    """
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=["HS256"]
+        )
+        # Verify this is an email verification token
+        if payload.get("type") != "email_verification":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+
+        email: str = payload.get("sub")
+        user_id: str = payload.get("user_id")
+        if not email or not user_id:
+            raise HTTPException(status_code=400, detail="Invalid token")
+
+    except InvalidTokenError as e:
+        raise e
+        # raise HTTPException(status_code=401, detail="Not authorized")
+
+    user = await crud.get_user_by_email(session=session, email=email)
+    if not user:
+        logger.info(f"User with email {email} not found")
+        raise HTTPException(status_code=404, detail=f"User with email {email} not found")
+
+    # Verify user_id matches
+    if str(user.id) != user_id:
+        raise HTTPException(status_code=400, detail="Token does not match user")
+
+    if user.email_verified:
+        raise HTTPException(status_code=400, detail="Email already verified")
+
+    user.email_verified = True
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    return user
 
 @router.patch(
     "/{user_id}",
@@ -206,6 +289,43 @@ async def update_user(
 
     db_user = await crud.update_user(session=session, db_user=db_user, user_in=user_in)
     return db_user
+
+
+@router.post("/send-verification-email", response_model=dict)
+async def send_verification_email(
+    current_user: CurrentUser,
+    background_tasks: BackgroundTasks
+) -> Any:
+    """
+    Send verification email with token.
+    """
+    if current_user.email_verified:
+        raise HTTPException(status_code=400, detail="Email already verified")
+
+    # Create a verification token with additional data
+    verification_token = create_access_token(
+        subject=current_user.email,
+        expires_delta=timedelta(hours=24),
+        type="email_verification",
+        user_id=str(current_user.id)
+    )
+
+    # Generate verification email
+    email_data = generate_email_verification_email(
+        verification_token=verification_token,
+        frontend_url=settings.FRONTEND_HOST
+    )
+
+    # Send email in background
+    background_tasks.add_task(
+        send_email,
+        email_to=current_user.email,
+        subject=email_data.subject,
+        html_content=email_data.html_content
+    )
+
+    return {"message": "Verification email sent successfully"}
+
 
 
 @router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])

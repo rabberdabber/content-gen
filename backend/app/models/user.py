@@ -9,6 +9,7 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    email_verified: bool = False
 
 
 class UserCreate(UserBase):
@@ -43,7 +44,6 @@ class User(UserBase, table=True):
 
 class UserPublic(UserBase):
     id: uuid.UUID
-
 
 class UsersPublic(SQLModel):
     data: list[UserPublic]

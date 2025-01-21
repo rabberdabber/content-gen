@@ -55,6 +55,32 @@ class EmailSettings(BaseSettings):
     SMTP_STARTTLS: bool
     SMTP_STARTSSL: bool
 
+class RedisSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file="../.env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+
+    # Rate limiting settings
+    RATE_LIMIT_LOGIN_MINUTE: int = 5
+    RATE_LIMIT_LOGIN_HOUR: int = 20
+
+    # Public AI rate limits (unauthenticated)
+    PUBLIC_RATE_LIMIT_AI_MINUTE: int = 2
+    PUBLIC_RATE_LIMIT_AI_HOUR: int = 5
+
+    # Protected AI rate limits (authenticated)
+    PROTECTED_RATE_LIMIT_AI_MINUTE: int = 5
+    PROTECTED_RATE_LIMIT_AI_HOUR: int = 10
+
+    @computed_field
+    @property
+    def REDIS_URL(self) -> str:
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
@@ -66,10 +92,13 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    FRONTEND_HOST: str = "http://localhost:5173"
+    FRONTEND_HOST: str = "http://localhost:3000"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
+        []
+    )
+    ALLOWED_HOSTS: Annotated[list[str] | str, BeforeValidator(parse_cors)] = (
         []
     )
     FLUX_API_BASE_URL: str = "https://api.bfl.ml/v1"
@@ -83,6 +112,13 @@ class Settings(BaseSettings):
     @property
     def all_cors_origins(self) -> list[str]:
         return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
+            self.FRONTEND_HOST
+        ]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def all_allowed_hosts(self) -> list[str]:
+        return [self.ALLOWED_HOSTS] + [
             self.FRONTEND_HOST
         ]
 
@@ -135,6 +171,14 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: str
     FIRST_SUPERUSER_PASSWORD: str
 
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+
+    @computed_field
+    @property
+    def REDIS_URL(self) -> str:
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (
@@ -160,3 +204,4 @@ class Settings(BaseSettings):
 settings = Settings()  # type: ignore
 file_storage_settings = FileStorageSettings()  # type: ignore
 email_settings = EmailSettings()  # type: ignore
+redis_settings = RedisSettings()  # type: ignore

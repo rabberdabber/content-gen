@@ -11,6 +11,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from app.core.config import settings
+from app.core.rate_limit import ai_rate_limit
 from app.models import (
     FluxPro11UltraCreate,
     ImageGenerationResultStatus,
@@ -144,12 +145,16 @@ async def check_generation_status(
     return result_data.get("status"), result_data
 
 @router.post("/generate-image")
-async def generate_image(request: FluxPro11UltraCreate) -> Any:
+@ai_rate_limit()
+async def generate_image(
+    request: Request,
+    request_data: FluxPro11UltraCreate
+) -> Any:
     """Generate an image using the Flux AI API."""
     try:
         async with httpx.AsyncClient() as client:
             # Start image generation
-            task_id = await start_image_generation(client, request)
+            task_id = await start_image_generation(client, request_data)
 
             # Poll for results
             attempt = 0
@@ -160,7 +165,7 @@ async def generate_image(request: FluxPro11UltraCreate) -> Any:
                 match status:
                     case ImageGenerationResultStatus.READY:
                         image_url = result_data.get("result", {}).get("sample")
-                        return await handle_ready_status(task_id, request, image_url, client)
+                        return await handle_ready_status(task_id, request_data, image_url, client)
 
                     case ImageGenerationResultStatus.PENDING:
                         await asyncio.sleep(settings.IMAGE_GENERATION_POLL_WAIT_SECONDS)

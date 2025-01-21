@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
@@ -12,6 +12,7 @@ from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
 from app.core.magic_link import create_magic_link, verify_magic_link
+from app.core.rate_limit import login_rate_limit
 from app.core.security import get_password_hash
 from app.models import NewPassword, Token, UserPublic
 from app.services.email_sender import send_email
@@ -29,8 +30,11 @@ class MagicLinkRequest(SQLModel):
     email: EmailStr
 
 @router.post("/login/access-token")
+@login_rate_limit()
 async def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    request: Request,
+    session: SessionDep,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests
@@ -66,10 +70,8 @@ async def recover_password(email: str, session: SessionDep) -> dict:
     user = await crud.get_user_by_email(session=session, email=email)
 
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="The user with this email does not exist in the system.",
-        )
+        return {"message": "If your email is registered, you'll receive a password recovery email."}
+
     password_reset_token = generate_password_reset_token(email=email)
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
@@ -79,7 +81,7 @@ async def recover_password(email: str, session: SessionDep) -> dict:
         subject=email_data.subject,
         html_content=email_data.html_content,
     )
-    return {"message": "Password recovery email sent"}
+    return {"message": "If your email is registered, you'll receive a password recovery email."}
 
 
 @router.post("/reset-password/")

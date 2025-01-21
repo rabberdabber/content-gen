@@ -29,6 +29,9 @@ services:
       db:
         condition: service_healthy
         restart: true
+      redis:
+        condition: service_healthy
+        restart: true
     command: bash scripts/prestart.sh
     env_file:
       - .env
@@ -82,6 +85,8 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
 
     healthcheck:
       test:
@@ -113,7 +118,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   app-db-data:
   minio-data:
+  redis-data:

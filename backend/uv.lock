@@ -237,7 +237,9 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyjwt" },
     { name = "python-multipart" },
+    { name = "redis" },
     { name = "sentry-sdk", extra = ["fastapi"] },
+    { name = "slowapi" },
     { name = "sqlmodel" },
     { name = "tenacity" },
     { name = "types-aiobotocore-s3" },
@@ -273,7 +275,9 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.2.1,<3.0.0" },
     { name = "pyjwt", specifier = ">=2.8.0,<3.0.0" },
     { name = "python-multipart", specifier = ">=0.0.7,<1.0.0" },
+    { name = "redis", specifier = ">=5.0.1" },
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=1.40.6,<2.0.0" },
+    { name = "slowapi", specifier = ">=0.1.9" },
     { name = "sqlmodel", specifier = ">=0.0.21,<1.0.0" },
     { name = "tenacity", specifier = ">=8.2.3,<9.0.0" },
     { name = "types-aiobotocore-s3", specifier = ">=2.17.0" },
@@ -600,6 +604,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/33/9f/329d26121fe165be44b1dfff21aa0dc348f04633931f1d20ed6cf448a236/cssutils-2.11.1.tar.gz", hash = "sha256:0563a76513b6af6eebbe788c3bf3d01c920e46b3f90c8416738c5cfc773ff8e2", size = 711657 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/ec/bb273b7208c606890dc36540fe667d06ce840a6f62f9fae7e658fcdc90fb/cssutils-2.11.1-py3-none-any.whl", hash = "sha256:a67bfdfdff4f3867fab43698ec4897c1a828eca5973f4073321b3bccaf1199b1", size = 385747 },
+]
+
+[[package]]
+name = "deprecated"
+version = "1.2.15"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2e/a3/53e7d78a6850ffdd394d7048a31a6f14e44900adedf190f9a165f6b69439/deprecated-1.2.15.tar.gz", hash = "sha256:683e561a90de76239796e6b6feac66b99030d2dd3fcf61ef996330f14bbb9b0d", size = 2977612 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1d/8f/c7f227eb42cfeaddce3eb0c96c60cbca37797fa7b34f8e1aeadf6c5c0983/Deprecated-1.2.15-py2.py3-none-any.whl", hash = "sha256:353bc4a8ac4bfc96800ddab349d89c25dec1079f65fd53acdcc1e0b975b21320", size = 9941 },
 ]
 
 [[package]]
@@ -1104,6 +1120,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/00/2a/e867e8531cf3e36b41201936b7fa7ba7b5702dbef42922193f05c8976cd6/jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe", size = 25843 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/31/b4/b9b800c45527aadd64d5b442f9b932b00648617eb5d63d2c7a6587b7cafc/jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980", size = 20256 },
+]
+
+[[package]]
+name = "limits"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "deprecated" },
+    { name = "packaging" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bc/03/91618859fc967fd727a3ecce5f7d9b0322152fa81c4a1bdd1f8afcfc5185/limits-4.0.1.tar.gz", hash = "sha256:a54f5c058dfc965319ae3ee78faf222294659e371b46d22cd7456761f7e46d5a", size = 70787 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/7a/6d84edd5a6bf666cdb14f8aaa3363c341271e0fa19e645e575ac0afd26d1/limits-4.0.1-py3-none-any.whl", hash = "sha256:67667e669f570cf7be4e2c2bc52f763b3f93bdf66ea945584360bc1a3f251901", size = 45753 },
 ]
 
 [[package]]
@@ -1811,6 +1841,18 @@ wheels = [
 ]
 
 [[package]]
+name = "redis"
+version = "5.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "async-timeout", marker = "python_full_version < '3.11.3'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/47/da/d283a37303a995cd36f8b92db85135153dc4f7a8e4441aa827721b442cfb/redis-5.2.1.tar.gz", hash = "sha256:16f2e22dff21d5125e8481515e386711a34cbec50f0e44413dd7d9c060a54e0f", size = 4608355 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3c/5f/fa26b9b2672cbe30e07d9a5bdf39cf16e3b80b42916757c5f92bca88e4ba/redis-5.2.1-py3-none-any.whl", hash = "sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4", size = 261502 },
+]
+
+[[package]]
 name = "requests"
 version = "2.32.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1912,6 +1954,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050 },
+]
+
+[[package]]
+name = "slowapi"
+version = "0.1.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "limits" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a0/99/adfc7f94ca024736f061257d39118e1542bade7a52e86415a4c4ae92d8ff/slowapi-0.1.9.tar.gz", hash = "sha256:639192d0f1ca01b1c6d95bf6c71d794c3a9ee189855337b4821f7f457dddad77", size = 14028 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/bb/f71c4b7d7e7eb3fc1e8c0458a8979b912f40b58002b9fbf37729b8cb464b/slowapi-0.1.9-py3-none-any.whl", hash = "sha256:cfad116cfb84ad9d763ee155c1e5c5cbf00b0d47399a769b227865f5df576e36", size = 14670 },
 ]
 
 [[package]]

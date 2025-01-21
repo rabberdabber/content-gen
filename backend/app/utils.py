@@ -123,6 +123,25 @@ def verify_password_reset_token(token: str) -> str | None:
         return None
 
 
+def generate_email_verification_email(
+    verification_token: str,
+    frontend_url: str,
+) -> EmailData:
+    """Generate email verification email using MJML template."""
+    verification_link = f"{frontend_url}/verify?token={verification_token}"
+
+    html_content = render_email_template(
+        template_name="verify_email.html",
+        context={
+            "project_name": settings.PROJECT_NAME,
+            "verification_link": verification_link,
+        },
+    )
+    subject = "Verify your email address"
+
+    return EmailData(subject=subject, html_content=html_content)
+
+
 def inject_attributes(node: dict) -> dict:
     """
     Inject the appropriate attributes based on node type.

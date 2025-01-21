@@ -6,8 +6,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
+from redis import asyncio as aioredis
 
 from app.core.db import engine
+from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,9 +35,19 @@ async def init(db_engine: AsyncEngine) -> None:
         raise e
 
 
+async def init_redis() -> None:
+    try:
+        redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+        await redis.ping()
+    except Exception as e:
+        logger.error(f"Error connecting to Redis: {e}")
+        raise e
+
+
 async def main() -> None:
     logger.info("Initializing service")
     await init(engine)
+    await init_redis()
     logger.info("Service finished initializing")
 
 
