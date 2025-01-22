@@ -11,3 +11,7 @@ class NodeTypeEnum(str, Enum):
     orderedList = "orderedList"
     listItem = "listItem"
     video = "video"
+    table = "table"
+    tableRow = "tableRow"
+    tableCell = "tableCell"
+    bulletList = "bulletList"

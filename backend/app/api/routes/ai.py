@@ -215,6 +215,7 @@ class Message(BaseModel):
 def generate_draft_content(
     content_request: DraftContentRequest,
     request: Request,
+    tone: Literal["article", "tutorial", "academic", "casual"] = "article",
 ) -> StreamingResponse:
     def stream_content():
         client = cast(OpenAI, request.state.openai_client)
@@ -223,9 +224,7 @@ def generate_draft_content(
             prompt_template = json.load(f)
 
         prompt = (prompt_template["content"]
-                 .replace("{{TONE}}", content_request.tone)
-                 .replace("{{FORMAT}}", content_request.format)
-                 .replace("{{STYLE}}", content_request.style))
+                 .replace("{{TONE}}", tone))
 
         with client.beta.chat.completions.stream(
             model="gpt-4o-2024-08-06",
@@ -234,7 +233,8 @@ def generate_draft_content(
                 {"role": "user", "content": content_request.prompt}
             ],
             response_format=PostContent,
-            max_completion_tokens=1000,
+            max_completion_tokens=2000,
+            temperature=0.5,
         ) as stream:
             for event in stream:
                 if event.type == "content.delta":

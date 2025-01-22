@@ -21,7 +21,7 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 router_drafts = APIRouter(prefix="/drafts", tags=["drafts"])
 
 
-@router.post("/",) #response_model=PostPublic)
+@router.post("/", response_model=PostPublic)
 async def create_post(
     *,
     session: SessionDep,
@@ -41,7 +41,7 @@ async def create_post(
     session.add(post)
     await session.commit()
     await session.refresh(post)
-    return post_data
+    return post
 
 
 @router.get("/", response_model=PostsPublic)

@@ -44,19 +44,42 @@ class HeadingNode(BaseModel):
 
 class ListItemNode(BaseModel):
     type: Literal["listItem"]
-    content: ParagraphNode
+    content: list[ParagraphNode]
 
 class OrderedListNode(BaseModel):
     type: Literal["orderedList"]
-    content: ListItemNode
+    content: list[ListItemNode]
+
+class BulletListNode(BaseModel):
+    type: Literal["bulletList"]
+    content: list[ListItemNode]
+
+class TableCellAttributes(BaseModel):
+    colspan: int
+    rowspan: int
+
+class TableCellNode(BaseModel):
+    type: Literal["tableCell"]
+    attrs: TableCellAttributes
+    content: list[ParagraphNode]
+
+class TableRowNode(BaseModel):
+    type: Literal["tableRow"]
+    content: list[TableCellNode]
+
+class TableCellNode(BaseModel):
+    type: Literal["tableCell"]
+    content: list[TextNode]
+
+class TableNode(BaseModel):
+    type: Literal["table"]
+    content: list[TableRowNode]
+
 
 class PostContent(BaseModel):
     type: Literal["doc"]
-    content: list[HeadingNode | ParagraphNode | CodeBlockNode]
+    content: list[HeadingNode | ParagraphNode | CodeBlockNode | BulletListNode | OrderedListNode | TableNode]
 
 
 class DraftContentRequest(BaseModel):
     prompt: str
-    tone: Literal["professional", "casual", "academic"] = "professional"
-    format: Literal["article", "chat", "tutorial"] = "article"
-    style: Literal["technical", "creative", "academic"] = "technical"
