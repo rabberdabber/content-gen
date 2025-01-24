@@ -16,7 +16,18 @@ from .image import (
     ImageUploader,
     UploadResult,
 )
-from .post import Post, PostCreate, PostPublic, PostPublicWithContent, PostsPublic, PostUpdate
+from .post import (
+    Post,
+    PostCreate,
+    PostPublic,
+    PostPublicWithContent,
+    PostsPublic,
+    PostTag,
+    PostUpdate,
+    Tag,
+    TagCreate,
+    TagResponse,
+)
 from .token import NewPassword, Token, TokenPayload
 from .user import (
     UpdatePassword,
@@ -74,4 +85,8 @@ __all__ = [
     "PostPublic",
     "PostsPublic",
     "PostPublicWithContent",
+    "Tag",
+    "PostTag",
+    "TagResponse",
+    "TagCreate",
 ]

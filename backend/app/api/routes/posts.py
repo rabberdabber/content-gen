@@ -1,8 +1,9 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from loguru import logger
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
@@ -12,7 +13,11 @@ from app.models import (
     PostPublic,
     PostPublicWithContent,
     PostsPublic,
+    PostTag,
     PostUpdate,
+    Tag,
+    TagCreate,
+    TagResponse,
     User,
     UserPublic,
 )
@@ -20,6 +25,56 @@ from app.schemas import TiptapDoc
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 router_drafts = APIRouter(prefix="/drafts", tags=["drafts"])
+
+@router.post("/tags", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
+async def create_tag(
+    *,
+    session: SessionDep,
+    tag_in: TagCreate,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Create a new tag.
+    Only superusers can create new tags to maintain consistency.
+    """
+    # Check if tag with same name already exists
+    statement = select(Tag).where(func.lower(Tag.name) == func.lower(tag_in.name))
+    existing_tag = await session.scalar(statement)
+
+    if existing_tag:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Tag with name '{tag_in.name}' already exists"
+        )
+
+    # Create new tag
+    tag = Tag(name=tag_in.name)
+    session.add(tag)
+    await session.commit()
+    await session.refresh(tag)
+
+    return tag
+
+@router.get("/tags", response_model=list[TagResponse])
+async def read_tags(
+    session: SessionDep,
+) -> Any:
+    """
+    Get all available tags.
+    Returns a list of tags sorted alphabetically by name.
+    and also includes the count of posts for each tag.
+    """
+    statement = (
+        select(Tag, func.count(PostTag.post_id).label("post_count"))
+        .outerjoin(PostTag)
+        .group_by(Tag.id)
+        .order_by(Tag.name)
+    )
+    results = await session.execute(statement)
+    return [
+        TagResponse(**tag.model_dump(), post_count=count)
+        for tag, count in results
+    ]
 
 
 @router.post("/", response_model=PostPublic)
@@ -50,26 +105,44 @@ async def read_posts(
     session: SessionDep,
     skip: int = 0,
     limit: int = 100,
-    tag: str | None = None,
-    published: bool = True,
+    tags: list[str] | None = Query(None),  # Accept multiple tag names
 ) -> Any:
     """
     Retrieve posts.
+    Parameters:
+        - tags: Optional list of tag names to filter posts
+        - skip: Number of posts to skip (pagination)
+        - limit: Maximum number of posts to return
     """
-    query = select(Post)
-    if tag:
-        query = query.where(Post.tag == tag)
-    if published:
-        query = query.where(Post.is_published == published)
-    else:
-        query = query.where(Post.is_published == False)  # noqa: E712  draft posts
+    # Base query
+    query = select(Post).options(selectinload(Post.tags))
 
-    count_statement = select(func.count()).select_from(query)
-    count = await session.scalar(count_statement)
+    # Add tag filter if specified
+    if tags:
+        # Join with tags and filter where tag name is in the provided list
+        query = (
+            query
+            .join(Post.tags)
+            .where(Tag.name.in_(tags))
+            # If multiple tags specified, ensure post has all tags
+            .group_by(Post.id)
+            .having(func.count(Tag.id) == len(tags))
+        )
 
-    statement = query.offset(skip).limit(limit)
+    # Get total count
+    count_statement = select(func.count()).select_from(query.subquery())
+    total = await session.scalar(count_statement)
+
+    # Get paginated results
+    statement = (
+        query
+        .offset(skip)
+        .limit(limit)
+        .order_by(Post.created_at.desc())
+    )
     posts = await session.scalars(statement)
-    return PostsPublic(data=posts, count=count)
+
+    return PostsPublic(data=posts.all(), count=total)
 
 
 @router.get("/me", response_model=PostsPublic)
@@ -226,3 +299,4 @@ async def delete_all_posts(
         await session.delete(post)
     await session.commit()
     return {"ok": True}
+
