@@ -1,239 +1,179 @@
-# Full Stack FastAPI Template
+# Content Gen
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+A modern backend application template using FastAPI with PostgreSQL, Redis, and MinIO for content management.
 
-## Technology Stack and Features
+## Features
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-    - 🤖 An automatically generated frontend client.
-    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-    - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+### Backend (FastAPI)
 
-### Dashboard Login
+- 🚀 Modern Python web framework using FastAPI
+- 🔐 JWT authentication with password hashing
+- 📨 Email verification and password recovery
+- 🗄️ SQLModel (SQLAlchemy core) for database operations
+- 📝 Automatic API documentation with Swagger UI
+- 🔄 Redis for caching and rate limiting
+- 📦 MinIO S3-compatible object storage
+- 🏷️ Tag-based content organization
+- 🤖 AI-powered content generation and moderation
+- ✨ CORS, Static Files, Dependencies, and more
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### DevOps
 
-### Dashboard - Admin
+- 🐳 Docker Compose setup for development
+- 🚀 Deployment ready for Coolify
+- 🔄 CI/CD with GitHub Actions
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Quick Start
 
-### Dashboard - Create User
+### Local Development
 
-[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Dashboard - Items
-
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Dashboard - User Settings
-
-[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Dashboard - Dark Mode
-
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-### Interactive API Documentation
-
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
-
-## How To Use It
-
-You can **just fork or clone** this repository and use it as is.
-
-✨ It just works. ✨
-
-### How to Use a Private Repository
-
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
-
-But you can do the following:
-
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
+1. Clone the repository:
 
 ```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+git clone <repository-url> my-project
+cd my-project
 ```
 
-- Enter into the new directory:
+2. Copy `.env.example` to `.env` and update the values:
 
 ```bash
-cd my-full-stack
+cp .env.example .env
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
+3. Start the development environment:
 
 ```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
+docker compose watch
 ```
 
-- Add this repo as another "remote" to allow you to get updates later:
+4. Access the services:
 
-```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
-```
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+- MinIO Console: http://localhost:9001
 
-- Push the code to your new repository:
+### Deployment with Coolify
 
-```bash
-git push -u origin master
-```
+1. Fork or clone this repository to your GitHub account
+2. In your Coolify dashboard:
 
-### Update From the Original Template
+   - Create a new service
+   - Select "Docker Compose"
+   - Connect your repository
+   - Configure environment variables
+   - Deploy
+3. Required environment variables for deployment:
 
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
+   ```
+   DOMAIN=your-domain.com
+   ENVIRONMENT=production
+   SECRET_KEY=your-secret-key
+   FIRST_SUPERUSER=admin@example.com
+   FIRST_SUPERUSER_PASSWORD=your-secure-password
+   POSTGRES_PASSWORD=your-db-password
+   MINIO_ROOT_USER=your-minio-user
+   MINIO_ROOT_PASSWORD=your-minio-password
+   ```
 
-- Make sure you added the original repository as a remote, you can check it with:
+## API Endpoints
 
-```bash
-git remote -v
+### Authentication
 
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
-```
+- `POST /api/v1/login/access-token` - OAuth2 compatible token login
+- `POST /api/v1/login/test-token` - Test token validation
+- `POST /api/v1/password-recovery/{email}` - Password recovery
+- `POST /api/v1/reset-password/` - Reset password
 
-- Pull the latest changes without merging:
+### Posts
 
-```bash
-git pull --no-commit upstream master
-```
+- `GET /api/v1/posts/` - List all published posts (with pagination and tag filtering)
+- `POST /api/v1/posts/` - Create new post (superuser only)
+- `GET /api/v1/posts/me` - Get current user's posts
+- `GET /api/v1/posts/{post_id}` - Get specific post
+- `PUT /api/v1/posts/{post_id}` - Update post (superuser only)
+- `DELETE /api/v1/posts/{post_id}` - Delete post (superuser only)
 
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
+### Drafts
 
-- If there are conflicts, solve them in your editor.
+- `GET /api/v1/drafts/` - List user's draft posts
+- `GET /api/v1/drafts/{draft_id}` - Get specific draft
 
-- Once you are done, commit the changes:
+### Tags
 
-```bash
-git merge --continue
-```
+- `POST /api/v1/posts/tags` - Create new tag (superuser only)
+- `GET /api/v1/posts/tags` - List all tags with post counts
 
-### Configure
+### AI Generation
+#### Public Routes (Rate Limited)
+- `POST /api/v1/ai/public/generate-image` - Generate images with AI
+- `POST /api/v1/ai/public/generate-draft-content` - Generate draft content
+- `POST /api/v1/ai/public/moderate-content` - Content moderation
 
-You can then update configs in the `.env` files to customize your configurations.
+#### Private Routes (Authenticated, Higher Rate Limits)
+- `POST /api/v1/ai/private/generate-image` - Generate images with AI
+- `POST /api/v1/ai/private/generate-draft-content` - Generate draft content
+- `POST /api/v1/ai/private/moderate-content` - Content moderation
 
-Before deploying it, make sure you change at least the values for:
+Features:
+- Multiple content tones: article, tutorial, academic, casual
+- Rate limiting for both public and authenticated users
+- Content moderation capabilities
+- AI-powered image generation
 
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
+### Media Storage
 
-You can (and should) pass these as environment variables from secrets.
+- File upload and management through MinIO S3-compatible storage
+- Supports metadata, content types, and presigned URLs
+- Automatic bucket creation and management
+- File listing with pagination and filtering
 
-Read the [deployment.md](./deployment.md) docs for more details.
+## Services
 
-### Generate Secret Keys
+### PostgreSQL
 
-Some environment variables in the `.env` file have a default value of `changethis`.
+- Primary database for storing application data
+- Stores posts, users, and tags
+- Runs on port 5432
 
-You have to change them with a secret key, to generate secret keys you can run the following command:
+### Redis
 
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
+- Used for caching and rate limiting
+- Runs on port 6379
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+### MinIO
 
-## How To Use It - Alternative With Copier
-
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
-
-```bash
-pip install copier
-```
-
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
-
-```bash
-pipx install copier
-```
-
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
-
-### Generate a Project With Copier
-
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
-
-Go to the directory that will be the parent of your project, and run the command with your project's name:
-
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-If you have `pipx` and you didn't install `copier`, you can run it directly:
-
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
+- S3-compatible object storage for media files
+- Supports metadata, content types, and presigned URLs
+- API runs on port 9000
+- Console runs on port 9001
+- Features:
+  - Automatic bucket creation
+  - File deduplication with UUID-based naming
+  - Metadata support for media types and attributes
+  - Presigned URL generation for secure access
+  - Pagination and filtering for file listings
 
 ## Development
 
-General development docs: [development.md](./development.md).
+Before deploying, make sure to update the following in your `.env` file:
 
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+- `SECRET_KEY` - Generate using: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+- `FIRST_SUPERUSER_PASSWORD`
+- `POSTGRES_PASSWORD`
+- `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD`
+- Other sensitive credentials
 
-## Release Notes
+For detailed setup instructions, refer to:
 
-Check the file [release-notes.md](./release-notes.md).
+- [Development Guide](./development.md)
+- [Deployment Guide](./deployment.md)
+
+## Documentation
+
+- [Backend Documentation](./backend/README.md)
+- [Deployment Guide](./deployment.md)
+- [Development Guide](./development.md)
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+This project is licensed under the terms of the MIT license.
