@@ -10,6 +10,7 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
     email_verified: bool = False
+    image_url: str | None = Field(default=None, max_length=255)
 
 
 class UserCreate(UserBase):

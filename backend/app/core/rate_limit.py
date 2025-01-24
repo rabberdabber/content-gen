@@ -18,22 +18,22 @@ limiter = Limiter(
     strategy="fixed-window",
 )
 
-def public_rate_limit():
+def ai_public_rate_limit():
     """Rate limit decorator for public routes"""
     def decorator(func):
-        @limiter.limit(f"{redis_settings.PUBLIC_RATE_LIMIT_MINUTE}/minute")
-        @limiter.limit(f"{redis_settings.PUBLIC_RATE_LIMIT_HOUR}/hour")
+        @limiter.limit(f"{redis_settings.PUBLIC_RATE_LIMIT_AI_MINUTE}/minute")
+        @limiter.limit(f"{redis_settings.PUBLIC_RATE_LIMIT_AI_HOUR}/hour")
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return await func(*args, **kwargs)
         return wrapper
     return decorator
 
-def protected_rate_limit():
+def ai_protected_rate_limit():
     """Rate limit decorator for protected routes"""
     def decorator(func):
-        @limiter.limit(f"{redis_settings.PROTECTED_RATE_LIMIT_MINUTE}/minute")
-        @limiter.limit(f"{redis_settings.PROTECTED_RATE_LIMIT_HOUR}/hour")
+        @limiter.limit(f"{redis_settings.PROTECTED_RATE_LIMIT_AI_MINUTE}/minute")
+        @limiter.limit(f"{redis_settings.PROTECTED_RATE_LIMIT_AI_HOUR}/hour")
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return await func(*args, **kwargs)
@@ -51,16 +51,6 @@ def login_rate_limit():
         return wrapper
     return decorator
 
-def ai_rate_limit():
-    """Rate limit decorator for AI routes"""
-    def decorator(func):
-        @limiter.limit(f"{redis_settings.PUBLIC_RATE_LIMIT_AI_MINUTE}/minute")
-        @limiter.limit(f"{redis_settings.PUBLIC_RATE_LIMIT_AI_HOUR}/hour")
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            return await func(*args, **kwargs)
-        return wrapper
-    return decorator
 
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
     """Handler for rate limit exceeded exceptions"""

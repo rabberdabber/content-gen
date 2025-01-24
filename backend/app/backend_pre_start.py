@@ -1,15 +1,15 @@
 import asyncio
 import logging
 
+from redis import asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
-from redis import asyncio as aioredis
 
-from app.core.db import engine
 from app.core.config import settings
+from app.core.db import engine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import sqlalchemy as sa
 from sqlmodel import JSON, Column, Field, SQLModel
 
+from app.models.user import UserPublic
 from app.schemas import TiptapDoc
 
 
@@ -36,7 +37,7 @@ class Post(SQLModel, table=True):
     content: dict = Field(  # Store as raw JSON in database
         sa_type=JSON, description="JSON content of the post in Tiptap format"
     )
-    title: str = Field(max_length=255, min_length=1)
+    title: str = Field(max_length=255, min_length=1, unique=True)
     tag: str | None = Field(default=None, max_length=50)
     is_published: bool = Field(default=False)
     excerpt: str | None = Field(default=None, max_length=500)
@@ -66,6 +67,7 @@ class PostPublic(SQLModel):
 
 class PostPublicWithContent(PostPublic):
     content: TiptapDoc
+    author: UserPublic | None = None
 
 
 class PostsPublic(SQLModel):

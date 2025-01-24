@@ -14,6 +14,7 @@ from app.models import (
     PostsPublic,
     PostUpdate,
     User,
+    UserPublic,
 )
 from app.schemas import TiptapDoc
 
@@ -151,9 +152,12 @@ async def read_post(
     Get post by ID.
     """
     post = await session.get(Post, post_id)
+    author = await session.get(User, post.author_id)
+    post_public = PostPublicWithContent.model_validate(post)
+    post_public.author = UserPublic.model_validate(author)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    return post
+    return post_public
 
 
 @router.put("/{post_id}", response_model=PostPublic)

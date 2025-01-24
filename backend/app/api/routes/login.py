@@ -55,7 +55,8 @@ async def login_access_token(
 
 
 @router.post("/login/test-token", response_model=UserPublic)
-async def test_token(current_user: CurrentUser) -> Any:
+@login_rate_limit()
+async def test_token(request: Request, current_user: CurrentUser) -> Any:
     """
     Test access token
     """
@@ -63,7 +64,8 @@ async def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
-async def recover_password(email: str, session: SessionDep) -> dict:
+@login_rate_limit()
+async def recover_password(request: Request, email: str, session: SessionDep) -> dict:
     """
     Password Recovery
     """
@@ -85,7 +87,8 @@ async def recover_password(email: str, session: SessionDep) -> dict:
 
 
 @router.post("/reset-password/")
-async def reset_password(session: SessionDep, body: NewPassword) -> dict:
+@login_rate_limit()
+async def reset_password(request: Request, session: SessionDep, body: NewPassword) -> dict:
     """
     Reset password
     """
@@ -134,18 +137,19 @@ async def recover_password_html_content(email: str, session: SessionDep) -> Any:
 
 
 @router.post("/login/magic-link")
-async def request_magic_link(request: MagicLinkRequest, session: SessionDep, background_tasks: BackgroundTasks) -> dict:
+@login_rate_limit()
+async def request_magic_link(request: Request, magic_link_request: MagicLinkRequest, session: SessionDep, background_tasks: BackgroundTasks) -> dict:
     """
     Request a magic link for passwordless authentication
     """
-    user = await crud.get_user_by_email(session=session, email=request.email)
+    user = await crud.get_user_by_email(session=session, email=magic_link_request.email)
     if not user:
         return {"message": "If your email is registered, you'll receive a magic link"}
 
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    magic_link_token = create_magic_link(request.email)
+    magic_link_token = create_magic_link(magic_link_request.email)
     magic_link = f"{settings.FRONTEND_HOST}/auth/verify?token={magic_link_token}"
 
     html_content = render_email_template(
@@ -156,13 +160,14 @@ async def request_magic_link(request: MagicLinkRequest, session: SessionDep, bac
         },
     )
 
-    background_tasks.add_task(send_email, request.email, f"{settings.PROJECT_NAME} - Login Link", html_content)
+    background_tasks.add_task(send_email, magic_link_request.email, f"{settings.PROJECT_NAME} - Login Link", html_content)
 
     return {"message": "If your email is registered, you'll receive a magic link"}
 
 
 @router.post("/login/verify-magic-link")
-async def verify_magic_link_token(token: str, session: SessionDep) -> Token:
+@login_rate_limit()
+async def verify_magic_link_token(request: Request, token: str, session: SessionDep) -> Token:
     """
     Verify magic link token and return access token
     """
