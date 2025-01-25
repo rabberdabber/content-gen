@@ -9,6 +9,7 @@ from fastapi import HTTPException, Request, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from openai import OpenAI
+from openai.types.chat.chat_completion import ChatCompletion
 
 from app.core.config import settings
 from app.models import (
@@ -78,6 +79,30 @@ class AIGenerator:
                 "x-vercel-ai-data-stream": "v1"
             }
         )
+
+    def generate_sandbox_content(
+        self,
+        content_request: DraftContentRequest,
+        request: Request
+    ) -> dict:
+        """Generate sandbox content using OpenAI."""
+        client = cast(OpenAI, request.state.openai_client)
+        with open(f"{settings.ROOT_DIR}/ai_prompts/sandbox_content.json") as f:
+            prompt_template = json.load(f)
+
+        response: ChatCompletion = client.chat.completions.create(
+            model="gpt-4-0125-preview",
+            messages=[
+                {"role": "system", "content": prompt_template["content"]},
+                {"role": "user", "content": content_request.prompt}
+            ],
+            response_format={ "type": "json_object" },
+            max_tokens=2000,
+            temperature=0.7,
+        )
+        logger.info(f"Sandbox content response: {response.choices[0].message.content}")
+
+        return json.loads(response.choices[0].message.content)
 
     # Private methods
     async def _start_image_generation(
@@ -176,7 +201,7 @@ class AIGenerator:
                     yield json.dumps({"error": str(event.error)}) + "\n"
                 elif event.type == "content.done":
                     yield json.dumps({"done": True}) + "\n"
-    
+
     async def moderate_content(
         self,
         request: Request,

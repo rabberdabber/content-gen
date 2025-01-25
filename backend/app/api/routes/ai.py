@@ -30,6 +30,15 @@ async def generate_draft_content_public(
 ):
     return ai_generator.generate_draft_content(content_request, request, tone)
 
+@router.post("/public/generate-sandbox-content")
+@ai_public_rate_limit()
+async def generate_sandbox_content_public(
+    content_request: DraftContentRequest,
+    request: Request,
+    ai_generator: AIGenerator = Depends()
+):
+    return ai_generator.generate_sandbox_content(content_request, request)
+
 # Protected routes with higher rate limits
 @router.post("/private/generate-image")
 @ai_protected_rate_limit()
@@ -51,6 +60,16 @@ async def generate_draft_content_private(
     ai_generator: AIGenerator = Depends()
 ):
     return ai_generator.generate_draft_content(content_request, request, tone)
+
+@router.post("/private/generate-sandbox-content")
+@ai_protected_rate_limit()
+async def generate_sandbox_content_private(
+    content_request: DraftContentRequest,
+    request: Request,
+    current_user: CurrentUser,  # noqa: ARG001
+    ai_generator: AIGenerator = Depends()
+):
+    return ai_generator.generate_sandbox_content(content_request, request)
 
 @ai_protected_rate_limit()
 @router.post("/private/moderate-content")
