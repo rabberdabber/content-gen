@@ -75,37 +75,48 @@ docker compose watch
    MINIO_ROOT_PASSWORD=your-minio-password
    ```
 
-# System Architecture
+# Service Architecture
 
-![System Architecture Diagram](system_diagram.png)
+![Service Component Diagram](system_diagram.png)
 
-## Services Overview
+## Service Components Overview
 
-Our application architecture consists of:
+Our application's service architecture consists of:
 
-### Infrastructure
-- Virtual Machine hosting
-- Coolify Platform for deployment
-- Docker Compose for containerization
+### Infrastructure Layer
+- Virtual Machine as hosting environment
+- Coolify Platform for deployment and management
+- Docker Compose for container orchestration
 
-### Core Services
-- FastAPI Backend with:
-  - Authentication
-  - Content Generation
-  - Image Generation
-  - Media Service
-  - Rate Limiter
-  - Email Service
+### Application Services
+- Frontend UI with API Client
+- FastAPI Backend Services:
+  - Authentication & Authorization
+  - Content Generation (OpenAI integration)
+  - Image Generation (Flux integration)
+  - Media Service (MinIO integration)
+  - Rate Limiter (Redis integration)
+  - Email Service (PostMark integration)
 
-### Storage
-- PostgreSQL for primary data
-- Redis for rate limiting
-- MinIO S3 for object storage
+### Data Layer
+- PostgreSQL: Primary database for application data
+- Redis: Rate limiting and caching
+- MinIO S3: Object storage for media files
 
 ### External Services
-- OpenAI API for content generation
-- Flux API for image generation
-- PostMark API for email delivery
+- OpenAI API: AI content generation
+- Flux API: AI image generation
+- PostMark API: Transactional email delivery
+
+A true system architecture diagram would also include:
+- Network topology
+- Security layers (firewalls, VPCs, etc.)
+- Load balancers
+- Backup systems
+- Monitoring and logging
+- CI/CD pipeline
+- DNS configuration
+- SSL/TLS termination
 
 ## API Endpoints
 
