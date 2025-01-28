@@ -75,6 +75,38 @@ docker compose watch
    MINIO_ROOT_PASSWORD=your-minio-password
    ```
 
+# System Architecture
+
+![System Architecture Diagram](system_diagram.png)
+
+## Services Overview
+
+Our application architecture consists of:
+
+### Infrastructure
+- Virtual Machine hosting
+- Coolify Platform for deployment
+- Docker Compose for containerization
+
+### Core Services
+- FastAPI Backend with:
+  - Authentication
+  - Content Generation
+  - Image Generation
+  - Media Service
+  - Rate Limiter
+  - Email Service
+
+### Storage
+- PostgreSQL for primary data
+- Redis for rate limiting
+- MinIO S3 for object storage
+
+### External Services
+- OpenAI API for content generation
+- Flux API for image generation
+- PostMark API for email delivery
+
 ## API Endpoints
 
 ### Authentication
@@ -174,6 +206,4 @@ For detailed setup instructions, refer to:
 - [Deployment Guide](./deployment.md)
 - [Development Guide](./development.md)
 
-## License
 
-This project is licensed under the terms of the MIT license.
