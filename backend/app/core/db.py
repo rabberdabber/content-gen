@@ -33,10 +33,12 @@ async def init_db(session: AsyncSession) -> None:
             email=settings.FIRST_SUPERUSER,
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
-            image_url=f"{settings.SERVER_HOST}/uploads/superuser_profile.jpg"
+            image_url=f"{settings.SERVER_HOST}/uploads/superuser_profile.jpg",
+            full_name="Bereket Assefa"
         )
         user = await create_user(session=session, user_create=user_in)
     else:
-        if not user.image_url:
+        if not user.image_url or not user.full_name:
             user.image_url = f"{settings.SERVER_HOST}/uploads/superuser_profile.jpg"
+            user.full_name = "Bereket Assefa"
             await session.commit()

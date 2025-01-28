@@ -28,6 +28,12 @@ from .post import (
     TagCreate,
     TagResponse,
 )
+from .dashboard import (
+    UserDashboardInfo,
+    PopularTag,
+    TagDistribution,
+    DashboardStats,
+)
 from .token import NewPassword, Token, TokenPayload
 from .user import (
     UpdatePassword,
@@ -89,4 +95,8 @@ __all__ = [
     "PostTag",
     "TagResponse",
     "TagCreate",
+    "UserDashboardInfo",
+    "PopularTag",
+    "TagDistribution",
+    "DashboardStats",
 ]

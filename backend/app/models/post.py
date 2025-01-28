@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
-from typing import List
 
 import sqlalchemy as sa
+from pydantic import field_validator
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 from app.models.user import UserPublic
@@ -14,6 +14,7 @@ class PostBase(SQLModel):
     tags: list[str] | None = Field(default_factory=list)
     is_published: bool = Field(default=False)
     excerpt: str | None = Field(default=None, max_length=500)
+    slug: str | None = Field(default=None, max_length=255, min_length=1)
 
 
 class PostCreate(SQLModel):
@@ -23,6 +24,7 @@ class PostCreate(SQLModel):
     is_published: bool = Field(default=False)
     excerpt: str | None = Field(default=None, max_length=500)
     feature_image_url: str | None = Field(default=None, max_length=100)
+    slug: str | None = Field(default=None, max_length=255, min_length=1)
 
 
 class PostUpdate(SQLModel):
@@ -31,7 +33,7 @@ class PostUpdate(SQLModel):
     tags: list[str] | None = Field(default=None)
     is_published: bool | None = None
     excerpt: str | None = Field(default=None, max_length=500)
-
+    slug: str | None = Field(default=None, max_length=255, min_length=1)
 
 class PostTag(SQLModel, table=True):
     __tablename__ = "post_tag"
@@ -64,17 +66,17 @@ class TagResponse(SQLModel):
 
 class Tag(SQLModel, table=True):
     __tablename__ = "tag"
-    
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(
-        max_length=50, 
-        index=True, 
+        max_length=50,
+        index=True,
         unique=True,
         nullable=False
     )
 
     # Relationship back to posts
-    posts: List["Post"] = Relationship(
+    posts: list["Post"] = Relationship(
         back_populates="tags",
         link_model=PostTag
     )
@@ -82,13 +84,17 @@ class Tag(SQLModel, table=True):
 
 class Post(SQLModel, table=True):
     __tablename__ = "post"
+    __table_args__ = (
+        sa.UniqueConstraint('is_published', 'title', name='uq_post_is_published_title'),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     content: dict = Field(
         sa_type=JSON,
         description="JSON content of the post in Tiptap format"
     )
-    title: str = Field(max_length=255, min_length=1, unique=True)
+    title: str = Field(max_length=255, min_length=1)
+    slug: str = Field(max_length=255, min_length=1, unique=True)
     is_published: bool = Field(default=False)
     excerpt: str | None = Field(default=None, max_length=500)
     feature_image_url: str | None = Field(default=None, max_length=100)
@@ -119,6 +125,21 @@ class PostPublic(SQLModel):
     updated_at: datetime
     author_id: uuid.UUID
     feature_image_url: str | None = None
+    slug: str | None = None
+    class Config:
+        # This is necessary to allow using `from_orm`.
+        # (SQLModel uses Pydantic under the hood.)
+        orm_mode = True
+
+    @field_validator("tags", mode="before")
+    def parse_tags(cls, value):
+        """
+        If `value` is a list of Tag objects, 
+        return their names. Otherwise, just return as is.
+        """
+        if isinstance(value, list) and value and isinstance(value[0], Tag):
+            return [tag.name for tag in value]
+        return value or []
 
 
 class PostPublicWithContent(PostPublic):

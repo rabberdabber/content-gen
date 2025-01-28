@@ -15,3 +15,5 @@ class NodeTypeEnum(str, Enum):
     tableRow = "tableRow"
     tableCell = "tableCell"
     bulletList = "bulletList"
+    livecodeblock = "livecodeblock"
+    hardBreak = "hardBreak"

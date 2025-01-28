@@ -21,6 +21,7 @@ from app.models import (
     User,
     UserPublic,
 )
+from app.models.dashboard import DashboardStats, PopularTag, TagDistribution, UserDashboardInfo
 from app.schemas import TiptapDoc
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -76,7 +77,6 @@ async def read_tags(
         for tag, count in results
     ]
 
-
 @router.post("/", response_model=PostPublic)
 async def create_post(
     *,
@@ -86,18 +86,41 @@ async def create_post(
 ) -> Any:
     """
     Create new post.
+    If tags don't exist, they will be created automatically.
     """
     # Convert post_in to dict and handle TiptapDoc serialization
     logger.info(f"Post in: {post_in}")
     post_create_data = PostCreate.model_validate(post_in)
     post_create_data.content = TiptapDoc.model_validate(post_create_data.content)
     post_data = post_create_data.model_dump()
-    logger.info(f"Post data: {post_data}")
-    post = Post(**post_data, author_id=current_user.id)
+
+    # Handle tags
+    tags = []
+    if post_data.get("tags"):
+        for tag_name in post_data["tags"]:
+            # Check if tag exists
+            statement = select(Tag).where(func.lower(Tag.name) == func.lower(tag_name))
+            existing_tag = await session.scalar(statement)
+
+            if existing_tag:
+                tags.append(existing_tag)
+            else:
+                # Create new tag
+                new_tag = Tag(name=tag_name)
+                tags.append(new_tag)
+
+    # Remove tags from post_data as we'll handle them separately
+    post_data.pop("tags", None)
+    logger.info(f"Tags: {tags}")
+    # Create post
+    post = Post(**post_data, author_id=current_user.id, tags=tags)
+    post_public = PostPublic.model_validate(post)
+
     session.add(post)
     await session.commit()
     await session.refresh(post)
-    return post
+    logger.info(f"Post created: {post.model_dump()}")
+    return post_public
 
 
 @router.get("/", response_model=PostsPublic)
@@ -115,7 +138,7 @@ async def read_posts(
         - limit: Maximum number of posts to return
     """
     # Base query
-    query = select(Post).options(selectinload(Post.tags))
+    query = select(Post).options(selectinload(Post.tags)).where(Post.is_published == True)
 
     # Add tag filter if specified
     if tags:
@@ -142,7 +165,10 @@ async def read_posts(
     )
     posts = await session.scalars(statement)
 
-    return PostsPublic(data=posts.all(), count=total)
+    return PostsPublic(
+        data=posts,
+        count=total
+    )
 
 
 @router.get("/me", response_model=PostsPublic)
@@ -157,7 +183,7 @@ async def read_published_posts(
     """
     Retrieve posts.
     """
-    query = select(Post).where(Post.author_id == current_user.id)
+    query = select(Post).options(selectinload(Post.tags)).where(Post.author_id == current_user.id)
     if tag:
         query = query.where(Post.tag == tag)
     if published:
@@ -184,7 +210,7 @@ async def read_drafts(
     """
     Retrieve posts.
     """
-    query = select(Post).where(Post.author_id == current_user.id, Post.is_published == False)  # noqa: E712  draft posts
+    query = select(Post).options(selectinload(Post.tags)).where(Post.author_id == current_user.id, Post.is_published == False)  # noqa: E712  draft posts
     if tag:
         query = query.where(Post.tag == tag)
 
@@ -194,8 +220,26 @@ async def read_drafts(
 
     statement = query.offset(skip).limit(limit)
     posts = await session.scalars(statement)
-    return PostsPublic(data=posts, count=count)
+    posts_public = [PostPublic.model_validate(post) for post in posts]
+    return PostsPublic(data=posts_public, count=count)
 
+@router_drafts.get("/by-slug/{slug}", response_model=PostPublicWithContent)
+async def read_draft_by_slug(
+    session: SessionDep,
+    current_user: CurrentUser,
+    slug: str,
+) -> Any:
+    """
+    Retrieve draft.
+    """
+    query = select(Post).options(selectinload(Post.tags)).where(Post.author_id == current_user.id, Post.is_published == False, Post.slug == slug)  # noqa: E712  draft posts
+
+
+    draft = await session.scalar(query)
+    draft_public = PostPublicWithContent.model_validate(draft)
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    return draft_public
 
 @router_drafts.get("/{draft_id}", response_model=PostPublicWithContent)
 async def read_draft(
@@ -206,7 +250,7 @@ async def read_draft(
     """
     Retrieve draft.
     """
-    query = select(Post).where(Post.author_id == current_user.id, Post.is_published == False, Post.id == draft_id)  # noqa: E712  draft posts
+    query = select(Post).options(selectinload(Post.tags)).where(Post.author_id == current_user.id, Post.is_published == False, Post.id == draft_id)  # noqa: E712  draft posts
 
 
     draft = await session.scalar(query)
@@ -215,16 +259,17 @@ async def read_draft(
     return draft
 
 
-@router.get("/{post_id}", response_model=PostPublicWithContent)
+@router.get("/{post_title}", response_model=PostPublicWithContent)
 async def read_post(
     *,
     session: SessionDep,
-    post_id: UUID,
+    post_title: str,
 ) -> Any:
     """
     Get post by ID.
     """
-    post = await session.get(Post, post_id)
+    post = select(Post).options(selectinload(Post.tags)).where(Post.title == post_title)
+    post = await session.scalar(post)
     author = await session.get(User, post.author_id)
     post_public = PostPublicWithContent.model_validate(post)
     post_public.author = UserPublic.model_validate(author)
@@ -233,18 +278,39 @@ async def read_post(
     return post_public
 
 
-@router.put("/{post_id}", response_model=PostPublic)
+@router.get("/by-slug/{slug}", response_model=PostPublicWithContent)
+async def read_post_by_slug(
+    *,
+    session: SessionDep,
+    slug: str,
+) -> Any:
+    """
+    Get post by slug.
+    """
+    post = select(Post).options(selectinload(Post.tags)).where(Post.slug == slug)
+    post = await session.scalar(post)
+    logger.info(f"Post: {post}")
+    author = await session.get(User, post.author_id)
+    post_public = PostPublicWithContent.model_validate(post)
+    post_public.author = UserPublic.model_validate(author)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post_public
+
+
+@router.patch("/{post_id}", response_model=PostPublic)
 async def update_post(
     *,
     session: SessionDep,
     post_id: UUID,
     post_in: PostUpdate,
-    current_user: User = Depends(get_current_active_superuser),
+    current_user: CurrentUser,
 ) -> Any:
     """
     Update a post.
     """
-    post = await session.get(Post, post_id)
+    post = select(Post).options(selectinload(Post.tags)).where(Post.id == post_id)
+    post = await session.scalar(post)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
@@ -254,12 +320,14 @@ async def update_post(
     # Only update fields that were actually passed
     update_data = post_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
+        logger.info(f"going to update {field} with {value}")
         setattr(post, field, value)
 
+    post_public = PostPublic.model_validate(post)
     session.add(post)
     await session.commit()
     await session.refresh(post)
-    return post
+    return post_public
 
 
 @router.delete("/{post_id}")
@@ -299,4 +367,90 @@ async def delete_all_posts(
         await session.delete(post)
     await session.commit()
     return {"ok": True}
+
+@router.get("/dashboard/stats", response_model=DashboardStats)
+async def get_dashboard_stats(
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Get dashboard statistics including:
+    - User info
+    - Total posts count
+    - Current user's posts count
+    - Current user's drafts count
+    - Popular tags (top 5)
+    - Tag distribution
+    """
+    # Create user info
+    user_info = UserDashboardInfo(
+        id=current_user.id,
+        full_name=current_user.full_name,
+        email=current_user.email,
+        is_superuser=current_user.is_superuser
+    )
+
+    # Get total posts count (published only)
+    total_posts_query = select(func.count()).select_from(
+        select(Post).options(selectinload(Post.tags)).where(Post.is_published == True).subquery()  # noqa: E712
+    )
+    total_posts = await session.scalar(total_posts_query)
+
+    # Get current user's posts count
+    user_posts_query = select(func.count()).select_from(
+        select(Post).options(selectinload(Post.tags)).where(
+            Post.author_id == current_user.id,
+            Post.is_published == True  # noqa: E712
+        ).subquery()
+    )
+    user_posts = await session.scalar(user_posts_query)
+
+    # Get current user's drafts count
+    user_drafts_query = select(func.count()).select_from(
+        select(Post).options(selectinload(Post.tags)).where(
+            Post.author_id == current_user.id,
+            Post.is_published == False  # noqa: E712
+        ).subquery()
+    )
+    user_drafts = await session.scalar(user_drafts_query)
+
+    # Get popular tags (top 5)
+    popular_tags_query = (
+        select(Tag.name, func.count(PostTag.post_id).label("count"))
+        .join(PostTag)
+        .join(Post)
+        .where(Post.is_published == True)  # noqa: E712
+        .group_by(Tag.id)
+        .order_by(func.count(PostTag.post_id).desc())
+        .limit(5)
+    )
+    popular_tags_result = await session.exec(popular_tags_query)
+    popular_tags = [
+        PopularTag(name=name, count=count)
+        for name, count in popular_tags_result
+    ]
+
+    # Get tag distribution
+    tag_distribution_query = (
+        select(Tag.name, func.count(PostTag.post_id).label("count"))
+        .join(PostTag)
+        .join(Post)
+        .where(Post.is_published == True)  # noqa: E712
+        .group_by(Tag.id)
+        .order_by(Tag.name)
+    )
+    tag_distribution_result = await session.exec(tag_distribution_query)
+    tag_distribution = [
+        TagDistribution(name=name, count=count)
+        for name, count in tag_distribution_result
+    ]
+
+    return DashboardStats(
+        user=user_info,
+        total_posts=total_posts,
+        user_posts=user_posts,
+        user_drafts=user_drafts,
+        popular_tags=popular_tags,
+        tag_distribution=tag_distribution
+    )
 
