@@ -61,8 +61,7 @@ class RedisSettings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    REDIS_HOST: str = "redis"
-    REDIS_PORT: int = 6379
+    REDIS_URL: str
 
     # Rate limiting settings
     RATE_LIMIT_LOGIN_MINUTE: int = 5
@@ -76,10 +75,12 @@ class RedisSettings(BaseSettings):
     PROTECTED_RATE_LIMIT_AI_MINUTE: int = 5
     PROTECTED_RATE_LIMIT_AI_HOUR: int = 10
 
-    @computed_field
-    @property
-    def REDIS_URL(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+
+    @model_validator(mode="after")
+    def _check_redis_url(self) -> Self:
+        if not self.REDIS_URL.startswith("redis://"):
+            raise ValueError("REDIS_URL must start with 'redis://'")
+        return self
 
 class DatabaseSettings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -199,7 +200,6 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
