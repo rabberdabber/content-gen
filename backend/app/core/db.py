@@ -2,12 +2,12 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.core.config import settings
+from app.core.config import database_settings, settings
 from app.crud import create_user
 from app.models import User, UserCreate
 
 engine = create_async_engine(
-    str(settings.SQLALCHEMY_DATABASE_URI), echo=True, future=True
+    str(database_settings.SQLALCHEMY_DATABASE_URI), echo=True, future=True
 )
 
 

@@ -40,4 +40,9 @@ COPY ./app /app/app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
+# Add prestart script to entrypoint
+COPY scripts/prestart.sh /app/prestart.sh
+RUN chmod +x /app/prestart.sh
+
+ENTRYPOINT ["/app/prestart.sh"]
 CMD ["fastapi", "run", "--workers", "4", "app/main.py", "--port", "8001"]

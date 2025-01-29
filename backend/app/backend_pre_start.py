@@ -8,7 +8,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
 
-from app.core.config import settings
+from app.core.config import redis_settings
 from app.core.db import engine
 
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +37,7 @@ async def init(db_engine: AsyncEngine) -> None:
 
 async def init_redis() -> None:
     try:
-        redis = aioredis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+        redis = aioredis.from_url(redis_settings.REDIS_URL, encoding="utf-8", decode_responses=True)
         await redis.ping()
     except Exception as e:
         logger.error(f"Error connecting to Redis: {e}")
