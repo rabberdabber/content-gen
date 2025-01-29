@@ -56,7 +56,7 @@ class LocalImageUploader(ImageUploader):
             file_path = self.get_file_path(unique_filename)
 
             self.save_file(file_path, file)
-            url = f"{file_storage_settings.BASE_URL}/uploads/{unique_filename}"
+            url = f"{file_storage_settings.MINIO_BASE_URL}/uploads/{unique_filename}"
 
             db_image = Image(
                 id=uuid.UUID(metadata.get("id")),

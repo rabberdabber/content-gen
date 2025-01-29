@@ -46,7 +46,7 @@ class S3MediaUploader:
     @classmethod
     def get_object_url(cls, endpoint_url: str, bucket_name: str, key: str) -> str:
         """Generate a consistent object URL"""
-        return f"{file_storage_settings.BASE_URL}/{bucket_name}/{key}"
+        return f"{file_storage_settings.MINIO_BASE_URL}/{bucket_name}/{key}"
 
     async def _generate_presigned_url(
         self,
@@ -67,7 +67,7 @@ class S3MediaUploader:
             return url
         except Exception as e:
             logger.error(f"Error generating presigned URL: {str(e)}")
-            return f"{file_storage_settings.BASE_URL}/uploads/{key}"
+            return f"{file_storage_settings.MINIO_BASE_URL}/uploads/{key}"
 
     async def upload_media(
         self, file: UploadFile, meta: dict
