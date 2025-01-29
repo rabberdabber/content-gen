@@ -47,8 +47,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY scripts/prestart.sh /app/prestart.sh
 RUN chmod +x /app/prestart.sh
 
+EXPOSE 8000
+
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/api/v1/utils/health-check || exit 1
+    CMD curl -f http://localhost:8000/api/v1/utils/health-check || exit 1
 
 ENTRYPOINT ["/app/prestart.sh"]
-CMD ["fastapi", "run", "--workers", "4", "app/main.py", "--port", "8001"]
+CMD ["fastapi", "run", "--workers", "4", "app/main.py", "--port", "8000"]
