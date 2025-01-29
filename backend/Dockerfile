@@ -4,6 +4,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app/
 
+# Install curl for healthcheck and uv
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Install uv
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
 COPY --from=ghcr.io/astral-sh/uv:0.4.15 /uv /bin/uv
@@ -44,5 +47,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY scripts/prestart.sh /app/prestart.sh
 RUN chmod +x /app/prestart.sh
 
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/api/v1/utils/health-check || exit 1
+
 ENTRYPOINT ["/app/prestart.sh"]
-CMD ["fastapi", "run", "--workers", "4", "app/main.py", "--port", "8001"]
+CMD ["fastapi", "run", "--workers", "4", "app/main.py", "--port", "8000"]
