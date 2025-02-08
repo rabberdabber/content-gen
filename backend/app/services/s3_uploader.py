@@ -17,7 +17,7 @@ from app.models.media import FluxModel, MediaType
 class S3MediaUploader:
     def __init__(self):
         self.session: AioSession = get_session()
-        self.endpoint_url = "http://minio:9000"
+        self.endpoint_url = file_storage_settings.MINIO_BASE_URL
         self.aws_access_key_id = file_storage_settings.MINIO_ROOT_USER
         self.aws_secret_access_key = file_storage_settings.MINIO_ROOT_PASSWORD
         self.bucket_name = file_storage_settings.MINIO_BUCKET_NAME
