@@ -1,5 +1,12 @@
 from sqlmodel import SQLModel
 
+from .dashboard import (
+    DashboardStats,
+    PopularTag,
+    TagDistribution,
+    UserDashboardInfo,
+)
+
 # Import all models that need to be registered with SQLModel
 from .image import (
     FluxModel,
@@ -28,13 +35,7 @@ from .post import (
     TagCreate,
     TagResponse,
 )
-from .dashboard import (
-    UserDashboardInfo,
-    PopularTag,
-    TagDistribution,
-    DashboardStats,
-)
-from .token import NewPassword, Token, TokenPayload
+from .token import NewPassword, RefreshToken, Token, TokenPayload
 from .user import (
     UpdatePassword,
     User,
@@ -99,4 +100,5 @@ __all__ = [
     "PopularTag",
     "TagDistribution",
     "DashboardStats",
+    "RefreshToken",
 ]
