@@ -17,7 +17,26 @@ class ImageNode(BaseModel):
     alt: str
 
 class CodeBlockAttributes(BaseModel):
-    language: Literal["python", "javascript", "typescript", "tsx", "jsx", "python", "java", "c", "cpp", "ruby", "go", "rust", "html", "css", "sql", "shell", "markdown", "json", "yaml", "xml"]
+    language: Literal[
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "c",
+        "cpp",
+        "ruby",
+        "go",
+        "rust",
+        "html",
+        "css",
+        "sql",
+        "shell",
+        "markdown",
+        "json",
+        "yaml",
+        "xml"
+    ]
+
 
 class CodeBlockNode(BaseModel):
     type: Literal["codeBlock"]

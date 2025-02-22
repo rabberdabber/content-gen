@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -21,7 +22,12 @@ from app.models import (
     User,
     UserPublic,
 )
-from app.models.dashboard import DashboardStats, PopularTag, TagDistribution, UserDashboardInfo
+from app.models.dashboard import (
+    DashboardStats,
+    PopularTag,
+    TagDistribution,
+    UserDashboardInfo,
+)
 from app.schemas import TiptapDoc
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -129,6 +135,9 @@ async def read_posts(
     skip: int = 0,
     limit: int = 100,
     tags: list[str] | None = Query(None),  # Accept multiple tag names
+    sort_order: str = Query("desc", enum=["asc", "desc"]),  # Control sort order
+    start_date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),  # Date in YYYY-MM-DD format
+    end_date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),  # Date in YYYY-MM-DD format
 ) -> Any:
     """
     Retrieve posts.
@@ -136,6 +145,9 @@ async def read_posts(
         - tags: Optional list of tag names to filter posts
         - skip: Number of posts to skip (pagination)
         - limit: Maximum number of posts to return
+        - sort_order: Sort order for posts by creation date ("asc" or "desc")
+        - start_date: Filter posts created after this date (inclusive) in YYYY-MM-DD format
+        - end_date: Filter posts created before this date (inclusive) in YYYY-MM-DD format
     """
     # Base query
     query = select(Post).options(selectinload(Post.tags)).where(Post.is_published == True)
@@ -152,16 +164,24 @@ async def read_posts(
             .having(func.count(Tag.id) == len(tags))
         )
 
+    # Add date range filters if specified
+    if start_date:
+        start_datetime = datetime.strptime(f"{start_date} 00:00:00", "%Y-%m-%d %H:%M:%S")
+        query = query.where(Post.created_at >= start_datetime)
+    if end_date:
+        end_datetime = datetime.strptime(f"{end_date} 23:59:59", "%Y-%m-%d %H:%M:%S")
+        query = query.where(Post.created_at <= end_datetime)
+
     # Get total count
     count_statement = select(func.count()).select_from(query.subquery())
     total = await session.scalar(count_statement)
 
-    # Get paginated results
+    # Get paginated results with specified sort order
     statement = (
         query
         .offset(skip)
         .limit(limit)
-        .order_by(Post.created_at.desc())
+        .order_by(Post.created_at.desc() if sort_order == "desc" else Post.created_at.asc())
     )
     posts = await session.scalars(statement)
 
