@@ -34,6 +34,7 @@ class PostUpdate(SQLModel):
     is_published: bool | None = None
     excerpt: str | None = Field(default=None, max_length=500)
     slug: str | None = Field(default=None, max_length=255, min_length=1)
+    feature_image_url: str | None = Field(default=None, max_length=100)
 
 class PostTag(SQLModel, table=True):
     __tablename__ = "post_tag"

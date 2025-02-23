@@ -329,8 +329,10 @@ async def update_post(
     """
     Update a post.
     """
-    post = select(Post).options(selectinload(Post.tags)).where(Post.id == post_id)
-    post = await session.scalar(post)
+    # Use selectinload to load the tags relationship
+    statement = select(Post).options(selectinload(Post.tags)).where(Post.id == post_id)
+    post = await session.scalar(statement)
+
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
@@ -339,6 +341,23 @@ async def update_post(
 
     # Only update fields that were actually passed
     update_data = post_in.model_dump(exclude_unset=True)
+
+    # Handle tags separately
+    if "tags" in update_data:
+        tags = []
+        for tag_name in update_data["tags"]:
+            statement = select(Tag).where(func.lower(Tag.name) == func.lower(tag_name))
+            existing_tag = await session.scalar(statement)
+
+            if existing_tag:
+                tags.append(existing_tag)
+            else:
+                new_tag = Tag(name=tag_name)
+                tags.append(new_tag)
+
+        post.tags = tags
+        update_data.pop("tags")
+
     for field, value in update_data.items():
         logger.info(f"going to update {field} with {value}")
         setattr(post, field, value)
