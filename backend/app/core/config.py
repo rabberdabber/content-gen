@@ -131,6 +131,7 @@ class Settings(BaseSettings):
     FLUX_API_BASE_URL: str = "https://api.bfl.ml/v1"
     FLUX_API_KEY: str
     OPENAI_API_KEY: str
+    GEMINI_API_KEY: str
     IMAGE_GENERATION_POLL_MAX_ATTEMPTS: int = 30
     IMAGE_GENERATION_POLL_WAIT_SECONDS: float = 0.3
     ROOT_DIR: str = str(pathlib.Path(__file__).parent.parent)

@@ -29,6 +29,8 @@ dependencies = [
     "aiosmtplib>=3.0.2",
     "slowapi>=0.1.9",
     "redis>=5.0.1",
+    "jiter>=0.8.2",
+    "instructor[google-generativeai,vertexai]>=1.3.2",
 ]
 
 [tool.uv]
